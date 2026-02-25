@@ -3,6 +3,6 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: "/geo-map-game-frontend/",
+  base: "/geo-map-game/",
   plugins: [react()],
 })
