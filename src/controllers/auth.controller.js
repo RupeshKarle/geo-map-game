@@ -29,8 +29,8 @@ export const register = async (req, res) => {
   );
   
   res.status(201).json(result.rows[0]);
- } catch (error) {
-  console.error(error);
+ } catch (err) {
+  console.error(err);
   res.status(500).json({ message: 'Registration failed' });
  }
 };
@@ -79,8 +79,22 @@ export const login = async (req, res) => {
   });
 
   res.json({ message: 'Login successful' });
- } catch (error) {
-  console.error(error);
+ } catch (err) {
+  console.error("🔥 LOGIN ERROR:");
+  console.error("Message:", err.message);
+  console.error("Stack:", err.stack);
+
+  if (err.code) {
+    console.error("Code:", err.code);
+  }
+
+  if (err.detail) {
+    console.error("Detail:", err.detail);
+  }
+
+  if (err.constraint) {
+    console.error("Constraint:", err.constraint);
+  }
   res.status(500).json({ message: 'Login failed' });
  }
 }
@@ -113,7 +127,7 @@ export const refreshToken = async (req, res) => {
     });
 
     res.json({ message: 'Token refreshed successfully' });
-  } catch (error) {
+  } catch (err) {
     return res.status(401).json({ message: 'Invalid refresh token' });
   }
 };
