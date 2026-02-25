@@ -6,7 +6,6 @@ const WIN_POINTS = 100;
 
 export const startGame = async (req, res) => {
  try {
-  console.log(req.user);
   const userId = req.user.user_id;
   const { locationId } = req.params;
 
@@ -42,7 +41,7 @@ export const startGame = async (req, res) => {
    [userId, locationId]
   );
 
-  res.json(sessionResult.rows[0]);
+  res.json({ data: { id: sessionResult.rows[0] } });
  } catch (err) {
   console.error(err);
   res.status(500).json({ message: 'Failed to start game' });
@@ -149,9 +148,11 @@ export const submitGuess = async (req, res) => {
 
   await client.query('COMMIT');
 
-  res.json({
-    distance: Number(distance.toFixed(2)),
-    isWinner
+  res.json({ 
+    data: {
+      distance: Number(distance.toFixed(2)),
+      isWinner
+    }
   });
  } catch (err) {
   await client.query('ROLLBACK');

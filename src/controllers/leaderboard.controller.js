@@ -9,9 +9,7 @@ export const getTopThree = async (req, res) => {
     LIMIT 3`
   );
 
-  res.json({
-   leaderboard: result.rows
-  });
+  res.json({ data: { leaderboard: result.rows } });
  } catch (err) {
   console.error(err);
   res.status(500).json({ message: 'Failed to fetch leaderboard' });

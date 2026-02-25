@@ -38,7 +38,6 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
  try {
   const {email, password } = req.body;
-  console.log({email, password});
 
   const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
@@ -47,13 +46,11 @@ export const login = async (req, res) => {
   }
 
   const user = result.rows[0];
-  console.log({user});
   const isMatch = await verifyPassword(user.password, password);
 
   if (!isMatch) {
    return res.status(400).json({ message: 'Invalid credentials' });
   }
-
   const accessToken = generateAccessToken({
     user_id: user.id,
     role: user.role
@@ -65,7 +62,6 @@ export const login = async (req, res) => {
     user_id: user.id,
     type: 'refresh'
   }, deviceInfo);
-
   res.cookie('access_token', accessToken, {
     httpOnly: true,
     secure: NODE_ENV === 'production',
@@ -80,23 +76,10 @@ export const login = async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
-  res.json({ message: 'Login successful' });
+  res.json({ message: 'Login successful', data: {token: accessToken, user} });
  } catch (err) {
   console.error("🔥 LOGIN ERROR:");
   console.error("Message:", err.message);
-  console.error("Stack:", err.stack);
-
-  if (err.code) {
-    console.error("Code:", err.code);
-  }
-
-  if (err.detail) {
-    console.error("Detail:", err.detail);
-  }
-
-  if (err.constraint) {
-    console.error("Constraint:", err.constraint);
-  }
   res.status(500).json({ message: 'Login failed' });
  }
 }
