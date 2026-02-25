@@ -38,6 +38,7 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
  try {
   const {email, password } = req.body;
+  console.log({email, password});
 
   const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
@@ -46,6 +47,7 @@ export const login = async (req, res) => {
   }
 
   const user = result.rows[0];
+  console.log({user});
   const isMatch = await verifyPassword(user.password, password);
 
   if (!isMatch) {
