@@ -79,7 +79,7 @@ export const getAvailableLocations = async (req, res) => {
    ORDER BY created_at DESC
    `);
 
-   res.json({ data: result.rows });
+   res.json(result.rows);
  } catch (err) {
   console.error(err);
   res.status(500).json({ message: 'Failed to getch locations' });
