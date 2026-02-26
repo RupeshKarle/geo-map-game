@@ -24,7 +24,10 @@ const limiter = rateLimit({
 
 app.use(limiter);
 app.use(cors({
- origin: "https://rupeshkarle.github.io/geo-map-game",
+ origin: [
+  "http://localhost:5173",
+  "https://rupeshkarle.github.io"
+ ],
  credentials: true,
 
 }));
