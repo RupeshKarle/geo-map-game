@@ -72,12 +72,14 @@ export const enableLocation = async (req, res) => {
 
 export const getAvailableLocations = async (req, res) => {
  try {
-  const result = await pool.query(`
-   SELECT id, title, created_at
+  let query = `SELECT id, title, created_at, is_active
    FROM locations
-   WHERE is_active = true
+   ${ (req?.user?.role != 'admin')
+    ? 'WHERE is_active = true' : ''
+   }
    ORDER BY created_at DESC
-   `);
+  `;
+  const result = await pool.query(query);
 
    res.json(result.rows);
  } catch (err) {

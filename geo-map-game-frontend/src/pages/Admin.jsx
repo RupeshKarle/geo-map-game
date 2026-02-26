@@ -33,6 +33,11 @@ export default function Admin() {
     fetchLocations();
   };
 
+  const enableLocation = async (id) => {
+    await api.patch(`/locations/${id}/enable`);
+    fetchLocations();
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
@@ -73,10 +78,16 @@ export default function Admin() {
           <div key={loc.id} className="flex justify-between border-b py-2">
             <span>{loc.title}</span>
             <button
-              onClick={() => disableLocation(loc.id)}
-              className="bg-red-500 text-white px-3 rounded"
+              onClick={() => 
+                (loc?.is_active)
+                  ? disableLocation(loc.id)
+                  : enableLocation(loc.id)
+              }
+              className={`px-3 rounded text-white ${
+               loc.is_active ? 'bg-red-500' : 'bg-green-500'
+              }`}
             >
-             Disable
+             { loc.is_active ? 'Disable' : 'Enable' }
             </button>
           </div>
         ))}
