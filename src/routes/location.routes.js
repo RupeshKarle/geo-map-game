@@ -15,7 +15,7 @@ router.get('/available', authenticate, getAvailableLocations);
 
 /* Admin route */
 router.post('/', authenticate, requireAdmin, addLocation);
-router.post('/:id/disable', authenticate, requireAdmin, disableLocation);
-router.post('/:id/enable', authenticate, requireAdmin, enableLocation);
+router.patch('/:id/disable', authenticate, requireAdmin, disableLocation);
+router.patch('/:id/enable', authenticate, requireAdmin, enableLocation);
 
 export default router;
