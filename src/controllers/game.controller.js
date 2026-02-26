@@ -41,7 +41,7 @@ export const startGame = async (req, res) => {
    [userId, locationId]
   );
 
-  res.json({ id: sessionResult.rows[0] });
+  res.json({ id: sessionResult.rows[0]?.id });
  } catch (err) {
   console.error(err);
   res.status(500).json({ message: 'Failed to start game' });
