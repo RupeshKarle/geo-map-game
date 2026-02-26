@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://geo-map-game.onrender.com'
+  baseURL: 'https://geo-map-game.onrender.com',
+  withCredentials: true,
 });
 
 api.interceptors.request.use((config) => {

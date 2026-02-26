@@ -23,7 +23,12 @@ const limiter = rateLimit({
 });
 
 app.use(limiter);
-app.use(cors());
+app.use(cors({
+ origin: "https://rupeshkarle.github.io/geo-map-game",
+ credentials: true,
+
+}));
+app.set("trust proxy", 1);
 app.use(cookieParser());
 app.use(express.json());
 
