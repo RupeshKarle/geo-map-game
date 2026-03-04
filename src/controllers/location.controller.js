@@ -19,7 +19,6 @@ export const addLocation = async (req, res) => {
   console.log("db called");
   res.status(201).json(result.rows[0]);
  } catch (err) {
-  console.error(err);
   res.status(500).send({ message: 'Failed to add location' })
  }
 }
@@ -42,7 +41,6 @@ export const disableLocation = async (req, res) => {
 
   res.json(result.rows[0]);
  } catch (err) {
-  console.error(err);
   res.status(500).json({ message: 'Failed to disable location' });
  }
 }
@@ -65,7 +63,6 @@ export const enableLocation = async (req, res) => {
   
     res.send(result.rows[0]);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: 'Failed to enable location' });
   }
 }
@@ -83,7 +80,6 @@ export const getAvailableLocations = async (req, res) => {
 
    res.json(result.rows);
  } catch (err) {
-  console.error(err);
   res.status(500).json({ message: 'Failed to getch locations' });
  }
 }

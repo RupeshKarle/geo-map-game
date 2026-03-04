@@ -20,15 +20,19 @@ export const startGame = async (req, res) => {
   }
 
   const  activeSessionCheck = await pool.query(
-    `SELECT id FROM game_sessions
-    WHERE location_id = $1
-    AND user_id = $2
-    AND is_completed = false`,
+    `SELECT gs.id, l.title 
+      FROM game_sessions gs
+      JOIN locations l ON gs.location_id = l.id
+      WHERE gs.location_id = $1
+      AND gs.user_id = $2
+      AND gs.is_completed = false`,
     [locationId, userId]
   );
 
   if (activeSessionCheck.rows.length > 0) {
-    return res.status(400).json({
+    return res.json({
+      id: activeSessionCheck.rows[0]?.id,
+      title: activeSessionCheck.rows[0]?.title,
       message: 'Location already in active play'
     });
   }
@@ -43,7 +47,6 @@ export const startGame = async (req, res) => {
 
   res.json({ id: sessionResult.rows[0]?.id });
  } catch (err) {
-  console.error(err);
   res.status(500).json({ message: 'Failed to start game' });
  }
 }
@@ -107,11 +110,11 @@ export const submitGuess = async (req, res) => {
   );
 
   // Save attempt
-  await client.query(
-   `INSERT INTO attempts (session_id, guessed_lat, guessed_lng, distance)
-    VALUES ($1, $2, $3, $4)`,
-   [sessionId, guessedLat, guessedLng, distance]
-  );
+  // await client.query(
+  //  `INSERT INTO attempts (session_id, guessed_lat, guessed_lng, distance)
+  //   VALUES ($1, $2, $3, $4)`,
+  //  [sessionId, guessedLat, guessedLng, distance]
+  // );
 
   let isWinner = false;
 
@@ -154,7 +157,6 @@ export const submitGuess = async (req, res) => {
   });
  } catch (err) {
   await client.query('ROLLBACK');
-  console.error(err);
   res.status(500).json({ message: 'Guess failed' });
  } finally {
   client.release();

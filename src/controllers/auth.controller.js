@@ -11,8 +11,6 @@ export const register = async (req, res) => {
  try {
   const { name, email, password } = req.body;
 
-  console.log('Registering user:', { name, email });
-
   const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
   if (existingUser.rows.length > 0) {
@@ -30,7 +28,6 @@ export const register = async (req, res) => {
   
   res.status(201).json(result.rows[0]);
  } catch (err) {
-  console.error(err);
   res.status(500).json({ message: 'Registration failed' });
  }
 };
@@ -65,21 +62,19 @@ export const login = async (req, res) => {
   res.cookie('access_token', accessToken, {
     httpOnly: true,
     secure: NODE_ENV === 'production',
-    sameSite: 'none',
+    sameSite: (NODE_ENV === 'production') ? 'none' : 'lax',
     maxAge: 15 * 60 * 1000 // 15 minutes
   });
 
   res.cookie('refresh_token', refreshToken, {
     httpOnly: true,
     secure: NODE_ENV === 'production',
-    sameSite: 'none',
+    sameSite: (NODE_ENV === 'production') ? 'none' : 'lax',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
   });
 
   res.json({ message: 'Login successful', token: accessToken, user});
  } catch (err) {
-  console.error("🔥 LOGIN ERROR:");
-  console.error("Message:", err.message);
   res.status(500).json({ message: 'Login failed' });
  }
 }
@@ -107,7 +102,7 @@ export const refreshToken = async (req, res) => {
     res.cookie('access_token', accessToken, {
       httpOnly: true,
       secure: NODE_ENV === 'production',
-      sameSite: 'none',
+      sameSite: (NODE_ENV === 'production') ? 'none' : 'lax',
       maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
