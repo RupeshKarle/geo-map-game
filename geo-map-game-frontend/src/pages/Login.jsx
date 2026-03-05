@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from "../api/axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -110,6 +110,18 @@ export default function Login() {
           >
             {loading ? "Logging in..." : "Login"}
           </button>
+
+          
+          {/* Register Link */}
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+            Don't have an account?{" "}
+            <Link
+              to="/register"
+              className="text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Sign Up
+            </Link>
+          </p>
         </form>
       </div>
     </div>
