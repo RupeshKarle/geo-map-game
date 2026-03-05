@@ -7,10 +7,10 @@ export const getTopThree = async (req, res) => {
    `SELECT id, name, points
     FROM users
     ORDER BY points DESC
-    LIMIT 10
-    OFFSET $1
+    LIMIT $1
+    OFFSET $2
     `,
-    [(page - 1) * 10]
+    [limit, (page - 1) * 10]
   );
 
   const countResult = await pool.query(
