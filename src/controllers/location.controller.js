@@ -1,12 +1,12 @@
 import pool from '../config/db.js';
-
+import { io } from '../server.js';
 /**
  * Admin: Add new location
  */
 
 export const addLocation = async (req, res) => {
  try {
-  const { title, latitude, longitude, is_active } = req.body;
+  const { title, latitude, longitude } = req.body;
 
   console.log("req recieved");
 
@@ -14,10 +14,17 @@ export const addLocation = async (req, res) => {
    `INSERT INTO locations (title, latitude, longitude, is_active)
    VALUES ($1, $2, $3, $4)
    RETURNING *`,
-   [title, latitude, longitude, (is_active ?? false)]
+   [title, latitude, longitude, true]
   );
-  console.log("db called");
-  res.status(201).json(result.rows[0]);
+  const newLoc = result.rows[0];
+
+  /* Broadcast to all Users */
+  io.emit('new-location', {
+    id: newLoc.id,
+    title: newLoc.title
+  });
+
+  res.status(201).json(newLoc);
  } catch (err) {
   res.status(500).send({ message: 'Failed to add location' })
  }

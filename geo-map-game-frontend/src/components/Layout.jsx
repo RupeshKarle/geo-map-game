@@ -1,5 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import socket from '../socket.js';
+import notificationSound from '../assets/new.wav';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -7,6 +9,8 @@ export default function Layout({ children }) {
   const [dark, setDark] = useState(false);
   const [open, setOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("theme");
@@ -15,6 +19,29 @@ export default function Layout({ children }) {
       document.documentElement.classList.add("dark");
       setDark(true);
     }
+  }, []);
+
+  useEffect(() => {
+    socket.on("new-location", (data) => {
+      setNotification(data);
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.volume = 0.7;
+        audioRef.current.play().catch(() => {});
+      }
+      /*
+      const go = window.confirm(
+        `📍 New location available: ${data.title}\n\nStart game now?`
+      );
+
+      if (go) {
+        navigate(`/game/${data.id}`);
+      } */
+    });
+
+    return () => {
+      socket.off("new-location");
+    };
   }, []);
 
   useEffect(() => {
@@ -32,8 +59,26 @@ export default function Layout({ children }) {
     navigate("/login");
   };
 
+  const stopSound = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  };
+
+  const handleStart = () => {
+    stopSound();
+    navigate(`/game/${notification.id}`);
+    setNotification(null);
+  };
+
+  const handleDismiss = () => {
+    stopSound();
+    setNotification(null);
+  };
+
   return (
-    <div className="min-h-screen w-full">
+    <div className="relative min-h-screen w-full">
 
       {/* NAVBAR */}
       <nav className="bg-white dark:bg-slate-800 shadow-md px-6 py-4 flex justify-between items-center">
@@ -161,6 +206,79 @@ export default function Layout({ children }) {
       <div className="max-w-7xl mx-auto p-6 w-full">
         {children}
       </div>
+    
+    {/* 🔔 Notification Toast */}
+      {notification && (
+        <div
+          className="
+          fixed bottom-6 left-6
+          w-[320px]
+          rounded-2xl
+          backdrop-blur-xl
+          bg-white/90 dark:bg-slate-800/90
+          border border-gray-200 dark:border-slate-600
+          shadow-2xl
+          p-4
+          animate-slideIn
+        "
+        >
+          <div className="flex items-start gap-3">
+
+            <div className="text-2xl">📍</div>
+
+            <div className="flex-1">
+
+              <h3 className="font-semibold text-gray-800 dark:text-white">
+                New Location Available
+              </h3>
+
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
+                "{notification.title}"
+              </p>
+
+              <div className="flex gap-2 mt-3">
+                <button
+                  onClick={handleStart}
+                  className="
+                    px-3 py-1.5
+                    rounded-lg
+                    text-sm font-semibold
+                    text-white
+                    bg-gradient-to-r from-blue-500 to-purple-600
+                    hover:opacity-90
+                  "
+                >
+                  Start Game
+                </button>
+
+                <button
+                  onClick={handleDismiss}
+                  className="
+                    px-3 py-1.5
+                    rounded-lg
+                    text-sm
+                    bg-gray-200
+                    dark:bg-slate-700
+                    text-gray-800
+                    dark:text-gray-200
+                  "
+                >
+                  Dismiss
+                </button>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔊 Audio */}
+      <audio
+        ref={audioRef}
+        src={notificationSound}
+        preload="auto"
+      />
     </div>
   );
 }

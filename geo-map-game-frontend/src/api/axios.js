@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://geo-map-game.onrender.com',
+  baseURL: import.meta.env.VITE_API_URL,
   // baseURL: 'http://localhost:5000',
   withCredentials: true,
 });

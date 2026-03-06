@@ -70,3 +70,18 @@ body {
 .animate-popup {
   animation: popupEnter 0.2s ease-out;
 }
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.35s ease;
+}
