@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import socket from '../socket.js';
-import notificationSound from '../assets/new.wav';
+import notificationSound from '../assets/new.mp3';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
