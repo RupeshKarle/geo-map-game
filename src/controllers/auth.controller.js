@@ -1,6 +1,7 @@
 import argon2 from 'argon2';
 import jwt from 'jsonwebtoken';
 import pool from '../config/db.js';
+import crypto from 'crypto';
 import { createRefreshToken, generateAccessToken, verifyRefreshToken } from '../services/token.service.js';
 import { hashPassword, verifyPassword } from '../utils/password.js';
 
@@ -9,7 +10,21 @@ import { NODE_ENV } from '../config/env.js';
 
 export const register = async (req, res) => {
  try {
-  const { name, email, password } = req.body;
+  const { name, email, password, token } = req.body || {};
+  let invite_id = null, group_id = null;
+
+  if(token) {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+    const result = await pool.query(`
+      SELECT * FROM invites
+      WHERE hashed = $1 AND is_valid = TRUE
+      `, [hashedToken]);
+    if(!result.rows.length) {
+      return res.status(401).json({"message": "Invalid or expired invitation token."});
+    }
+    invite_id = result.rows[0].id;
+    group_id = result.rows[0].group_id;
+  }
 
   const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
@@ -19,22 +34,68 @@ export const register = async (req, res) => {
 
   const hashedPassword = await hashPassword(password);
 
-  const result = await pool.query(
-   `INSERT INTO users (name, email, password)
-    VALUES ($1, $2, $3)
-    RETURNING id, name, email, role`,
-    [name, email, hashedPassword]
-  );
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const result = await client.query(
+     `INSERT INTO users (name, email, password)
+      VALUES ($1, $2, $3)
+      RETURNING id, name, email, role`,
+      [name, email, hashedPassword]
+    );
+
+    const user = result.rows?.[0] ?? {};
   
-  res.status(201).json(result.rows[0]);
+    if(token && invite_id) {
+      await client.query(`
+        UPDATE groups SET members = array_append(members, $1) WHERE id = $2 AND NOT ($1 = ANY(members))`,[user.id, group_id]);
+
+      await client.query(`
+        INSERT INTO invite_log (invite_id, user_id)
+        VALUES ($1, $2)
+        `, [invite_id, user.id]);
+    }
+
+    await client.query('COMMIT');
+    const accessToken = generateAccessToken({
+      user_id: user.id,
+      role: user.role
+    });
+
+    const deviceInfo = getDeviceInfo(req);
+
+    const refreshToken = await createRefreshToken({
+      user_id: user.id,
+      type: 'refresh'
+    }, deviceInfo);
+    res.cookie('access_token', accessToken, {
+      httpOnly: true,
+      secure: NODE_ENV === 'production',
+      sameSite: (NODE_ENV === 'production') ? 'none' : 'lax',
+      maxAge: 15 * 60 * 1000 // 15 minutes
+    });
+
+    res.cookie('refresh_token', refreshToken, {
+      httpOnly: true,
+      secure: NODE_ENV === 'production',
+      sameSite: (NODE_ENV === 'production') ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
+    res.json({ message: 'Registration successful', token: accessToken, user});
+  } catch (e) {
+    await client.query("ROLLBACK");
+  }
+  res.status(500).json({message: 'Internal server error'});
  } catch (err) {
-  res.status(500).json({ message: 'Registration failed' });
+  res.status(500).json({ message: 'Registration failed', error: err.message });
  }
 };
 
 export const login = async (req, res) => {
  try {
-  const {email, password } = req.body;
+  const {email, password } = req.body || {};
 
   const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 

@@ -25,12 +25,12 @@ api.interceptors.response.use(
       // Unauthorized → token expired / invalid
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      window.location.replace("/login");
+      setTimeout(() => window.location.replace("/login"), 3000);
     }
 
     if (status === 403) {
       // Forbidden → no permission
-      window.location.replace("/");
+      setTimeout(() => window.location.replace("/"), 3000);
     }
 
     return Promise.reject(error);

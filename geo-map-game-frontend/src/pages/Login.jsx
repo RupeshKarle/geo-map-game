@@ -1,6 +1,6 @@
 import { useState } from "react";
 import api from "../api/axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -9,6 +9,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
+  const [searchParam] = useSearchParams();
+  const token = searchParam.get('token') || null;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,7 +22,9 @@ export default function Login() {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
-
+      if (token) {
+        return navigate(`/group-invite?token=${token}`);
+      }
       navigate("/");
     } catch (err) {
       if (err.status != 200) setError(err?.response?.data?.message ?? "Invalid email or password");

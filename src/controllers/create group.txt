@@ -1,0 +1,12 @@
+create group
+
+id name user_id
+max 2 groups and 10 members
+
+locations
+id group_id(nullable) name title latlong
+
+
+newLoc
+group_id then only group members
+else everyone

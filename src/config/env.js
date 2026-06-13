@@ -9,3 +9,7 @@ export const JWT_SECRET = process.env.JWT_SECRET;
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 export const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 export const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+export const GROUP_ADMIN_PENDING = process.env.GROUP_ADMIN_PENDING || 'group_admin_pending';
+export const GROUP_ADMIN_ROLE = process.env.GROUP_ADMIN_ROLE || 'group_admin';
+export const ADMIN_ROLE = process.env.ADMIN_ROLE || 'admin';
+export const USER_ROLE = process.env.USER_ROLE || 'user';

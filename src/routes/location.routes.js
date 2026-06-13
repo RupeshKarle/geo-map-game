@@ -3,7 +3,8 @@ import {
  addLocation,
  disableLocation,
  enableLocation,
- getAvailableLocations
+ getAvailableLocations,
+ getPaginatedLocations
 } from '../controllers/location.controller.js';
 
 import { authenticate, requireAdmin } from '../middleware/auth.middleware.js';
@@ -14,6 +15,8 @@ const router = Router();
 router.get('/available', authenticate, getAvailableLocations);
 
 /* Admin route */
+router.get('/', authenticate, requireAdmin, getPaginatedLocations);
+router.post('/grouped', authenticate, requireAdmin, getPaginatedLocations);
 router.post('/', authenticate, requireAdmin, addLocation);
 router.patch('/:id/disable', authenticate, requireAdmin, disableLocation);
 router.patch('/:id/enable', authenticate, requireAdmin, enableLocation);

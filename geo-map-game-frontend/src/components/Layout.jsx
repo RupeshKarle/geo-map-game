@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import socket from '../socket.js';
 import notificationSound from '../assets/new.mp3';
+import api from "../api/axios.js";
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -22,21 +23,20 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
-    socket.on("new-location", (data) => {
+    socket.on("new-location", async (data) => {
+      if (data.user_id == user.id) return;
+      if (data.group_id) {
+        let res = await checkGroup(data.group_id);
+        if (res?.data?.error) {
+          return false;
+        }
+      }
       setNotification(data);
       if (audioRef.current) {
         audioRef.current.currentTime = 0;
         audioRef.current.volume = 0.7;
         audioRef.current.play().catch(() => {});
       }
-      /*
-      const go = window.confirm(
-        `📍 New location available: ${data.title}\n\nStart game now?`
-      );
-
-      if (go) {
-        navigate(`/game/${data.id}`);
-      } */
     });
 
     return () => {
@@ -54,9 +54,22 @@ export default function Layout({ children }) {
     }
   }, [dark]);
 
-  const logout = () => {
-    localStorage.clear();
-    navigate("/login");
+  const checkGroup = async (group_id) => {
+    return await api.get(`users/belongs?groupId=${group_id}`)
+  }
+
+  const logout = async () => {
+    try{
+      await api.post("/auth/logout");
+      localStorage.clear();
+      navigate("/login");
+    } catch (err) {
+      if (err.status != 201) alert(err?.response?.data?.message ?? "Logout request failed.");
+    }
+  };
+
+  const profilePage = () => {
+    navigate("/profile");
   };
 
   const stopSound = () => {
@@ -93,7 +106,16 @@ export default function Layout({ children }) {
             <Link to="/" className="hover:text-blue-600">Locations</Link>
             <Link to="/leaderboard" className="hover:text-blue-600">Leaderboard</Link>
             {user?.role === "admin" && (
-              <Link to="/admin" className="hover:text-blue-600">Admin</Link>
+              <>
+                <Link to="/admin-req" className="hover:text-blue-600">Admin Requests</Link>
+                <Link to="/admin" className="hover:text-blue-600">Admin</Link>
+              </>
+            )}
+            {user?.role === "group_admin" && (
+              <>
+                <Link to="/manage-group" className="hover:text-blue-600">Manage Group</Link>
+                <Link to="/invite" className="hover:text-blue-600">Invite</Link>
+              </>
             )}
           </div>
         </div>
@@ -126,6 +148,13 @@ export default function Layout({ children }) {
                   <p className="px-4 py-2 border-b dark:border-slate-700">
                     {user.email}
                   </p>
+                  <button
+                    onClick={profilePage}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100
+                      dark:hover:bg-slate-700"
+                  >
+                    Profile
+                  </button>
                   <button
                     onClick={logout}
                     className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100 dark:hover:bg-slate-700"
@@ -176,14 +205,55 @@ export default function Layout({ children }) {
           </Link>
 
           {user?.role === "admin" && (
-            <Link
-              to="/admin"
+            <>
+              <Link
+                to="/admin-req"
+                onClick={() => setOpen(false)}
+                className="block w-full py-2 px-2 rounded-lg 
+                          hover:bg-gray-100 dark:hover:bg-slate-700"
+              >
+                Admin Requests
+              </Link>
+
+              <Link
+                to="/admin"
+                onClick={() => setOpen(false)}
+                className="block w-full py-2 px-2 rounded-lg 
+                          hover:bg-gray-100 dark:hover:bg-slate-700"
+              >
+                Admin
+              </Link>
+            </>
+          )}
+
+          {user?.role === "group_admin" && (
+            <>
+              <Link
+              to="/manage-group"
               onClick={() => setOpen(false)}
-              className="block w-full py-2 px-2 rounded-lg 
-                        hover:bg-gray-100 dark:hover:bg-slate-700"
+              className="block w-full py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 px-2"
+              >Manage Group</Link>
+              <Link
+              to="/invite"
+              onClick={() => setOpen(false)}
+              className="block w-full py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 px-2"
+              >Invite</Link>
+            </>
+          )}
+
+          {user && (
+            <button
+              onClick={() => {
+                  setOpen(false);
+                  profilePage();
+                }
+              }
+              className="block w-full text-left py-2 px-2 rounded-lg 
+                hover:bg-gray-100
+                dark:hover:bg-slate-700"
             >
-              Admin
-            </Link>
+              Profile
+            </button>
           )}
 
           {user && (

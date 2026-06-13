@@ -1,8 +1,11 @@
 import { useState } from "react";
 import api from "../api/axios";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 
 export default function Register() {
+  const [searchParam] = useSearchParams();
+  const token = searchParam.get('token') || null;
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,8 +27,10 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await api.post("/register", { name, email, password });
-      navigate("/login");
+      const res = await api.post("/register", { name, email, password, token });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      navigate("/");
     } catch (err) {
       if (err.status != 201) setError(err?.response?.data?.message ?? "Registration failed. Try again.");
     } finally {

@@ -1,21 +1,133 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/axios";
 
 export default function Admin() {
+  const navigate = useNavigate();
+
   const [title, setTitle] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
-  const [locations, setLocations] = useState([]);
 
-  useEffect(() => {
-    fetchLocations();
-  }, []);
+  const [totalLocations, setTotalLocation] = useState(0);
+  const [totalGroups, setTotalGroups] = useState(0);
 
-  const fetchLocations = async () => {
-    const res = await api.get("/locations/available");
-    setLocations(res.data);
+  const [pages, setPages] = useState({});
+  const [gPages, setGPages] = useState({});
+  const [currentPage, setCurrentPage] = useState({
+    'groups': 1,
+    'locations': 1
+  });
+  const [loadedPages, setLoadedPages] = useState({
+    'groups': 0,
+    'locations': 0
+  });
+  const [totalPages, setTotalPages] = useState({
+    'groups': 1,
+    'locations': 1
+  });
+
+  const limit = 10;
+  const loadingRef = useRef(false);
+  const gLoadingRef = useRef(false);
+
+  const fetchPage = async (page) => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+
+    try {
+      const res = await api.get(
+        `/locations?page=${page}&limit=${limit}`
+      );
+
+      let lL = res.data.locations?.length || 0;
+      
+      if (!res.data.totalPages == 0) {
+        setPages((prev) => ({
+          ...prev,
+          [page]: res.data.locations,
+        }));
+        setTotalPages((prev) => ({
+          ...prev, 
+          'locations': res.data.totalPages
+        }));
+        setLoadedPages((prev) => ({
+          ...prev, 
+          'locations': Math.max((prev?.['locations'] || 0), page)
+        }));
+        setTotalLocation(res.data.totalRecords ?? 0);
+      }
+      loadingRef.current = false;
+      if (lL == limit && page == totalPages['locations']) {
+        return fetchPage(page + 1);
+      }
+    } catch (err) {
+      alert(err?.response?.data?.message ?? "Something went wrong!");
+      navigate("/");
+    }
+
+    loadingRef.current = false;
   };
 
+  const fetchGroupsPage = async (page) => {
+    if (gLoadingRef.current) return;
+    gLoadingRef.current = true;
+
+    try {
+      const res = await api.get(
+        `/groups/paginated?page=${page}&limit=${limit}`
+      );
+
+      let gL = res.data.groups?.length || 0;
+      
+      if (!res.data.totalPages == 0) {
+        setGPages((prev) => ({
+          ...prev,
+          [page]: res.data.groups,
+        }));
+        setTotalPages((prev) => ({
+          ...prev, 
+          'locations': res.data.totalPages
+        }));
+        setLoadedPages((prev) => ({
+          ...prev, 
+          'groups': Math.max((prev?.['groups'] || 0), page)
+        }));
+        setTotalGroups(res.data.totalRecords ?? 0);
+      }
+      gLoadingRef.current = false;
+      if (gL == limit && page == totalPages['groups']) {
+        return fetchGroupsPage(page + 1);
+      }
+    } catch (err) {
+      alert(err?.response?.data?.message ?? err.message ?? "Something went wrong!");
+      navigate("/");
+    }
+
+    gLoadingRef.current = false;
+  };
+
+  useEffect(() => {
+    fetchPage(1);
+    fetchGroupsPage(1);
+  }, []);
+
+  const handlePageChange = (ofPage = 'locations', page) => {
+    setCurrentPage((prev) => ({
+      ...prev,
+      [ofPage]: page
+    }));
+
+    if (page === loadedPages[ofPage] && page < totalPages[ofPage]) {
+      (ofPage == 'locations') 
+        ? fetchPage(page + 1)
+        : fetchGroupsPage(page + 1);
+    }
+  };
+
+  const locations = pages[currentPage['locations']] || [];
+  const groups = gPages[currentPage['groups']] || [];
+  
   const addLocation = async () => {
     if (!title || !lat || !lng) return alert("All fields required");
 
@@ -28,25 +140,36 @@ export default function Admin() {
     setTitle("");
     setLat("");
     setLng("");
-    fetchLocations();
+    fetchPage(1);
+    setTotalLocation(prev => prev + 1);
   };
 
   const disableLocation = async (id) => {
     await api.patch(`/locations/${id}/disable`);
-    fetchLocations();
+    fetchPage(currentPage['locations']);
   };
 
   const enableLocation = async (id) => {
     await api.patch(`/locations/${id}/enable`);
-    fetchLocations();
+    fetchPage(currentPage['locations']);
+  };
+
+  const closeGroup = async (id) => {
+    await api.patch(`/groups/${id}/${false}`);
+    fetchGroupsPage(currentPage['groups']);
+  };
+
+  const openGroup = async (id) => {
+    await api.patch(`/groups/${id}/${true}`);
+    fetchGroupsPage(currentPage['groups']);
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
+    <div className="max-w-6xl mx-auto px-4 py-6">
 
       {/* Title */}
       <h2 className="text-3xl font-bold mb-6 
-                     text-gray-800 dark:text-white">
+                     text-white">
         Admin Dashboard
       </h2>
 
@@ -105,54 +228,193 @@ export default function Admin() {
 
       {/* LOCATIONS LIST CARD */}
       <div className="bg-white dark:bg-slate-800 
-                      p-6 rounded-2xl shadow-lg">
+        p-6 rounded-2xl shadow-lg mb-8 overflow-x-auto rounded-2xl shadow-lg">
         <h3 className="font-semibold text-lg mb-4 
                        text-gray-700 dark:text-gray-200">
           Locations
         </h3>
+        <table className="min-w-full bg-white dark:bg-slate-800">
 
-        <div className="space-y-3">
-          {locations.length === 0 && (
-            <p className="text-gray-500 dark:text-gray-400">
-              No locations found.
-            </p>
-          )}
+          <thead className="bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-semibold">Title</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">Group Name</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">Winner</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">Action</th>
+            </tr>
+          </thead>
 
-          {locations.map((loc) => (
-            <div
-              key={loc.id}
-              className="flex flex-col md:flex-row md:items-center 
-                         md:justify-between 
-                         border-b dark:border-slate-700 
-                         pb-3"
-            >
-              <div className="mb-2 md:mb-0">
-                <p className="font-medium 
-                              text-gray-800 dark:text-white">
+          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+            {locations.map((loc) => (
+              <tr
+                key={loc.id}
+                className="hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+              >
+                <td className="px-6 py-4 font-semibold text-gray-800 dark:text-white">
                   {loc.title}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {loc.latitude}, {loc.longitude}
-                </p>
-              </div>
+                </td>
+                <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
+                  {loc.group_name ?? 'GLOBAL LOCATION'}
+                </td>
+                <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
+                  {loc.winner ?? 'Not found'}
+                </td>
 
+                <td className="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400">
+                  <button
+                    onClick={() =>
+                      loc?.is_active
+                        ? disableLocation(loc.id)
+                        : enableLocation(loc.id)
+                    }
+                    className={`px-4 py-1 rounded-lg text-white transition
+                    ${
+                      loc.is_active
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-green-500 hover:bg-green-600"
+                    }`}
+                  >
+                    {loc.is_active ? "Disable" : "Enable"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+
+        </table>
+        {/* PAGINATION */}
+        <div className="flex flex-wrap justify-center mt-6 gap-2">
+
+          <button
+            disabled={currentPage['locations'] === 1}
+            onClick={() => handlePageChange('locations', currentPage['locations'] - 1)}
+            className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 disabled:opacity-50"
+          >
+            ◀
+          </button>
+
+          {Array.from({ length: loadedPages['locations'] }).map((_, i) => {
+            const page = i + 1;
+
+            return (
               <button
-                onClick={() =>
-                  loc?.is_active
-                    ? disableLocation(loc.id)
-                    : enableLocation(loc.id)
-                }
-                className={`px-4 py-1 rounded-lg text-white transition
-                ${
-                  loc.is_active
-                    ? "bg-red-500 hover:bg-red-600"
-                    : "bg-green-500 hover:bg-green-600"
+                key={page}
+                onClick={() => handlePageChange('locations', page)}
+                className={`px-3 py-1 rounded-lg transition ${
+                  currentPage['locations'] === page
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-white"
                 }`}
               >
-                {loc.is_active ? "Disable" : "Enable"}
+                {page}
               </button>
-            </div>
-          ))}
+            );
+          })}
+
+          <button
+            disabled={currentPage['locations'] === totalPages['locations']}
+            onClick={() => handlePageChange('locations', currentPage['locations'] + 1)}
+            className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 disabled:opacity-50"
+          >
+            ▶
+          </button>
+
+        </div>
+      </div>
+
+      {/* GROUPS LIST CARD */}
+      <div className="bg-white dark:bg-slate-800 
+        p-6 rounded-2xl shadow-lg mb-8 overflow-x-auto rounded-2xl shadow-lg">
+        <h3 className="font-semibold text-lg mb-4 
+                       text-gray-700 dark:text-gray-200">
+          Groups
+        </h3>
+        <table className="min-w-full bg-white dark:bg-slate-800">
+
+          <thead className="bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200">
+            <tr>
+              <th className="px-6 py-4 text-left text-sm font-semibold">Name</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">Owner</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">Is Open</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">Action</th>
+            </tr>
+          </thead>
+
+          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+            {groups.map((group) => (
+              <tr
+                key={group.id}
+                className="hover:bg-gray-50 dark:hover:bg-slate-700 transition"
+              >
+                <td className="px-6 py-4 font-semibold text-gray-800 dark:text-white">
+                  {group.name}
+                </td>
+                <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
+                  {group.owner ?? 'ADMIN'}
+                </td>
+                <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
+                  {group.is_open ? 'True' : 'False'}
+                </td>
+
+                <td className="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400">
+                  <button
+                    onClick={() =>
+                      group?.is_open
+                        ? closeGroup(group.id)
+                        : openGroup(group.id)
+                    }
+                    className={`px-4 py-1 rounded-lg text-white transition
+                    ${
+                      group.is_open
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-green-500 hover:bg-green-600"
+                    }`}
+                  >
+                    {group.is_open ? "Close" : "Open"}
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+
+        </table>
+        {/* PAGINATION */}
+        <div className="flex flex-wrap justify-center mt-6 gap-2">
+
+          <button
+            disabled={currentPage['groups'] === 1}
+            onClick={() => handlePageChange('groups', currentPage['groups'] - 1)}
+            className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 disabled:opacity-50"
+          >
+            ◀
+          </button>
+
+          {Array.from({ length: loadedPages['groups'] }).map((_, i) => {
+            const page = i + 1;
+
+            return (
+              <button
+                key={page}
+                onClick={() => handlePageChange('groups', page)}
+                className={`px-3 py-1 rounded-lg transition ${
+                  currentPage['groups'] === page
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-white"
+                }`}
+              >
+                {page}
+              </button>
+            );
+          })}
+
+          <button
+            disabled={currentPage['groups'] === totalPages['groups']}
+            onClick={() => handlePageChange('groups', currentPage['groups'] + 1)}
+            className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 disabled:opacity-50"
+          >
+            ▶
+          </button>
+
         </div>
       </div>
 

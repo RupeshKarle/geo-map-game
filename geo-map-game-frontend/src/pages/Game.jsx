@@ -48,7 +48,7 @@ export default function Game() {
         setLocation(res.data?.title);
       } catch (err) {
         alert(err?.response?.data?.message ?? "Please login");
-        navigate("/login");
+        navigate("/");
       }
     };
 

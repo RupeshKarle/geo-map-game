@@ -10,7 +10,7 @@ export const getTopThree = async (req, res) => {
     LIMIT $1
     OFFSET $2
     `,
-    [limit, (page - 1) * 10]
+    [limit, (page - 1) * limit]
   );
 
   const countResult = await pool.query(

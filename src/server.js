@@ -13,7 +13,12 @@ import authRoutes from './routes/auth.routes.js';
 import locationRoutes from './routes/location.routes.js';
 import gameRoutes from './routes/game.routes.js';
 import leaderboardRoutes from './routes/leaderboard.routes.js';
-import { authenticate } from './middleware/auth.middleware.js';
+import { adminAccess, authenticate } from './middleware/auth.middleware.js';
+import profileRoutes from './routes/profile.routes.js';
+import adminRoutes from './routes/admin.routes.js';
+import groupRoutes from './routes/group.routes.js';
+import invitesRoutes from './routes/invite.routes.js';
+import { validateToken } from './controllers/invite.controller.js';
 
 dotenv.config();
 
@@ -36,8 +41,6 @@ export const io = new Server(server, {
 
 // Socket connection
 io.on("connection", (socket) => {
-  console.log("User connected:", socket.id);
-
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
@@ -70,11 +73,15 @@ app.use(express.json());
 app.use('/health', healthRoutes);
 app.use('/', pubRoutes);
 
+app.use('/invites/validate', authenticate, validateToken)
 app.use('/auth', authenticate, authRoutes);
 app.use('/game', authenticate, gameRoutes);
+app.use('/users', authenticate, profileRoutes);
 app.use('/leaderboard', authenticate, leaderboardRoutes);
-app.use('/locations', locationRoutes);
-
+app.use('/locations', authenticate, locationRoutes);
+app.use('/admin', authenticate, adminRoutes);
+app.use('/groups', authenticate, adminAccess, groupRoutes);
+app.use('/invites', authenticate, adminAccess, invitesRoutes);
 
 // Start server (IMPORTANT)
 const port = process.env.PORT || PORT || 5000;
