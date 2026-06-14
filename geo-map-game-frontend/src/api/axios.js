@@ -1,4 +1,5 @@
 import axios from 'axios';
+const APP_BASE = "/geo-map-game/#";
 
 const api = axios.create({
   // baseURL: import.meta.env.VITE_API_URL,
@@ -25,12 +26,12 @@ api.interceptors.response.use(
       // Unauthorized → token expired / invalid
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      setTimeout(() => window.location.replace("/login"), 3000);
+      setTimeout(() => window.location.replace(`${window.location.origin}${APP_BASE}/login`), 3000);
     }
 
     if (status === 403) {
       // Forbidden → no permission
-      setTimeout(() => window.location.replace("/"), 3000);
+      setTimeout(() => window.location.replace(`${window.location.origin}${APP_BASE}/`), 3000);
     }
 
     return Promise.reject(error);

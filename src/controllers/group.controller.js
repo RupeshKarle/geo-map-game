@@ -83,12 +83,12 @@ export const saveGroup = async (req, res) => {
   }
   const result = await pool.query(
    `INSERT INTO groups (name, user_id)
-    SELECT $1, $2
+    SELECT $1::varchar, $2::bigint
     WHERE NOT EXISTS (
-      SELECT 1 FROM groups WHERE name = $1 AND user_id = $2
+      SELECT 1 FROM groups WHERE name = $1::varchar AND user_id = $2::bigint
     )
     AND (
-      SELECT COUNT(*) FROM groups WHERE user_id = $2
+      SELECT COUNT(*) FROM groups WHERE user_id = $2::bigint
     ) < 2
     RETURNING id, name
    `,

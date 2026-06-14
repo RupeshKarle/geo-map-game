@@ -11,7 +11,7 @@ export const addLocation = async (req, res) => {
 
   const result = await pool.query(
    `INSERT INTO locations (title, latitude, longitude, is_active, group_id)
-    SELECT $1, $2, $3, $4, $5
+    SELECT $1, $2, $3, $4, $5::integer
     WHERE 
       $5::integer IS NULL 
       OR 
