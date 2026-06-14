@@ -99,3 +99,27 @@ export const validateToken = async (req, res) => {
   res.status(500).json({message: err.message});
  }
 };
+
+export const getInvitees = async (req, res) => {
+  try {
+    const user_id = req.user.user_id;
+    const result = await pool.query(`
+      SELECT 
+        il.id AS uid,
+        i.group_id,
+        u.id, u.name, u.email,
+        g.name AS group_name
+      FROM invite_log il
+      JOIN users u ON il.user_id = u.id 
+      JOIN invites i ON il.invite_id = i.id
+      LEFT JOIN groups g ON i.group_id = g.id
+      WHERE i.invited_by = $1
+      ORDER BY g.id IS NOT NULL, g.id;
+      `, [user_id]);
+
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.log(err.message);
+    res.status(500).json({message: 'Internal server error'});
+  }
+};
