@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-// import { HashRouter, Routes, Route } from 'react-router-dom';
+// import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import Layout from "./components/Layout";
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -18,7 +18,7 @@ import GroupInvite from './pages/GroupInvite';
 
 function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <Routes>
         {/* Public Routes */}
         <Route path="/login" element={<Login />} />
@@ -38,7 +38,7 @@ function App() {
           <Route path="/group-invite" element={<Layout><GroupInvite /></Layout>} />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
 
