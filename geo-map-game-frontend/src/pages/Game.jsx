@@ -151,7 +151,7 @@ export default function Game() {
 
     } catch (err) {
       alert(err?.response?.data?.message ?? 'Too many guesses!')
-      navigate("/login");
+      navigate("/");
     }
   },
   [sessionId]

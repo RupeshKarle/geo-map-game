@@ -2,9 +2,9 @@ import axios from 'axios';
 const APP_BASE = "/geo-map-game/#";
 
 const api = axios.create({
-  // baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL,
   // baseURL: 'http://localhost:5000',
-  baseURL: 'https://geo-map-game.onrender.com',
+  // baseURL: 'https://geo-map-game.onrender.com',
   withCredentials: true,
 });
 
@@ -19,10 +19,23 @@ api.interceptors.request.use((config) => {
 /* Global response handler */
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const status = error.response?.status;
+    const originalRequest = error.config;
 
-    if (status === 401) {
+    if (originalRequest?.url?.includes('/refresh-token')) {
+      return Promise.reject(error);
+    }
+
+    if (status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        const res = await axios.post(`http://localhost:5000/refresh-token`,{},{ withCredentials: true });
+        return api(originalRequest);
+      } catch (err) {
+        console.log({err});
+        return Promise.reject(err);
+      }
       // Unauthorized → token expired / invalid
       localStorage.removeItem("token");
       localStorage.removeItem("user");

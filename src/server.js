@@ -19,6 +19,7 @@ import adminRoutes from './routes/admin.routes.js';
 import groupRoutes from './routes/group.routes.js';
 import invitesRoutes from './routes/invite.routes.js';
 import { validateToken } from './controllers/invite.controller.js';
+import { refreshToken } from './controllers/auth.controller.js';
 
 dotenv.config();
 
@@ -33,7 +34,7 @@ const allowedOrigins = [
 export const io = new Server(server, {
   cors: {
     origin: allowedOrigins,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PATCH", "OPTIONS"],
     credentials: true
   }
 });
@@ -73,6 +74,7 @@ app.use(express.json());
 app.use('/health', healthRoutes);
 app.use('/', pubRoutes);
 
+app.post('/refresh-token', refreshToken);
 app.use('/invites/validate', authenticate, validateToken)
 app.use('/auth', authenticate, authRoutes);
 app.use('/game', authenticate, gameRoutes);

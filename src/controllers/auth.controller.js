@@ -145,7 +145,7 @@ export const refreshToken = async (req, res) => {
   if(!refreshToken) return res.status(401).json({ message: 'No refresh token provided' });
 
   try {
-    const verify = verifyRefreshToken(refreshToken);
+    const verify = await verifyRefreshToken(refreshToken);
     if (!verify) return res.status(401).json({ message: 'Invalid refresh token' });
 
     const user = await pool.query(`SELECT * FROM users WHERE id = $1`, [verify.user_id]);
