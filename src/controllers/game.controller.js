@@ -1,8 +1,7 @@
 import pool from '../config/db.js';
 import { calculateDistance } from '../utils/distance.js';
 
-const WIN_DISTANCE_KM = 5;
-const WIN_POINTS = 100;
+const WIN_DISTANCE_KM = 1;
 
 export const startGame = async (req, res) => {
  try {
@@ -71,7 +70,7 @@ export const submitGuess = async (req, res) => {
   }
 
   const sessionResult = await client.query(
-   `SELECT gs.*, l.latitude, l.longitude, l.is_active
+   `SELECT gs.*, l.latitude, l.longitude, l.is_active, l.group_id, l.point
     FROM game_sessions gs
     JOIN locations l ON gs.location_id = l.id
     WHERE gs.id = $1
@@ -140,13 +139,27 @@ export const submitGuess = async (req, res) => {
     [userId, session.location_id]
    );
 
+   const WIN_POINTS = session?.point ?? 10;
    // Add points
-   await client.query(
-    `UPDATE users
-     SET points = points + $1
-     WHERE id = $2`,
-    [WIN_POINTS, userId]
-   );
+   if(session.group_id) {
+     await client.query(
+      `INSERT INTO leaders (user_id, group_id, points)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id, group_id) WHERE group_id IS NOT NULL
+        DO UPDATE SET points = leaders.points + EXCLUDED.points;
+        `,
+      [userId, session.group_id, WIN_POINTS]
+     );
+   } else {
+    await client.query(
+      `INSERT INTO leaders (user_id, group_id, points)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (user_id) WHERE group_id IS NULL
+        DO UPDATE SET points = leaders.points + EXCLUDED.points;
+        `,
+      [userId, null, WIN_POINTS]
+     );
+   }
   }
 
   await client.query('COMMIT');

@@ -7,11 +7,11 @@ import { io } from '../server.js';
 
 export const addLocation = async (req, res) => {
  try {
-  const { title, latitude, longitude, group_id = null } = req.body;
+  const { title, point, latitude, longitude, group_id = null } = req.body;
 
   const result = await pool.query(
-   `INSERT INTO locations (title, latitude, longitude, is_active, group_id)
-    SELECT $1, $2, $3, $4, $5::integer
+   `INSERT INTO locations (title, point, latitude, longitude, is_active, group_id)
+    SELECT $1, $6, $2, $3, $4, $5::integer
     WHERE 
       $5::integer IS NULL 
       OR 
@@ -19,7 +19,7 @@ export const addLocation = async (req, res) => {
         SELECT 1 FROM groups WHERE id = $5::integer AND is_open = true
       )
     RETURNING *`,
-   [title, latitude, longitude, true, group_id]
+   [title, latitude, longitude, true, group_id, point]
   );
   const newLoc = result.rows[0];
 

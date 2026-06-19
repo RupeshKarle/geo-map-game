@@ -6,6 +6,7 @@ export default function Admin() {
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
+  const [point, setPoint] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
 
@@ -129,15 +130,17 @@ export default function Admin() {
   const groups = gPages[currentPage['groups']] || [];
   
   const addLocation = async () => {
-    if (!title || !lat || !lng) return alert("All fields required");
+    if (!title || !point || !lat || !lng) return alert("All fields required");
 
     await api.post("/locations", {
       title,
+      point,
       latitude: parseFloat(lat),
       longitude: parseFloat(lng),
     });
 
     setTitle("");
+    setPoint("");
     setLat("");
     setLng("");
     fetchPage(1);
@@ -182,7 +185,7 @@ export default function Admin() {
         </h3>
 
         {/* Responsive Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
 
           <input
             className="border dark:border-slate-600 
@@ -192,6 +195,16 @@ export default function Admin() {
             placeholder="Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+          />
+
+          <input
+            className="border dark:border-slate-600 
+                       bg-gray-50 dark:bg-slate-700 
+                       text-gray-800 dark:text-white
+                       p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Point"
+            value={point}
+            onChange={(e) => setPoint(e.target.value)}
           />
 
           <input

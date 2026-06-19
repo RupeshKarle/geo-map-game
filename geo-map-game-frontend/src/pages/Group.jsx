@@ -10,8 +10,10 @@ export default function Group() {
 
  const [showMembers, setShowMembers] = useState(false);
  const [showLocations, setShowLocations] = useState(false);
+ const [showGroupLeaders, setShowGroupLeaders] = useState(false);
 
  const [title, setTitle] = useState("");
+ const [point, setPoint] = useState("");
  const [lat, setLat] = useState("");
  const [lng, setLng] = useState("");
 
@@ -134,18 +136,20 @@ const removeMember = (userId) => {
 };
 
 const addLocation = async () => {
-  if (!title || !lat || !lng) {
+  if (!title || !lat || !lng || !point) {
     return alert("All fields required");
   }
 
   await api.post(`locations`, {
     title,
+    point,
     latitude: parseFloat(lat),
     longitude: parseFloat(lng),
     group_id: groupId
   });
 
   setTitle("");
+  setPoint("");
   setLat("");
   setLng("");
   fetchPage(1);
@@ -260,6 +264,7 @@ const updateGroup = async () => {
                 <tr>
                   <th className="text-left p-2 border">Name</th>
                   <th className="text-left p-2 border">Email</th>
+                  <th className="text-left p-2 border">Points</th>
                   <th className="text-left p-2 border">Action</th>
                 </tr>
               </thead>
@@ -269,6 +274,7 @@ const updateGroup = async () => {
                   <tr key={member.id}>
                     <td className="p-2 border">{member.name}</td>
                     <td className="p-2 border">{member.email}</td>
+                    <td className="p-2 border">{member.points}</td>
 
                     <td className="p-2 border">
                       <button
@@ -285,169 +291,182 @@ const updateGroup = async () => {
           </div>
         </div>
       </div>
-      <div
-  className="bg-white dark:bg-slate-800
-             p-6 rounded-2xl shadow-lg mb-8"
->
-  <button
-    type="button"
-    onClick={() => setShowLocations((v) => !v)}
-    className="w-full flex items-center justify-between"
-  >
-    <h3 className="text-lg font-semibold">
-      Group Locations ({totalLocations})
-    </h3>
-
-    <span className="text-xl">
-      {showLocations ? "▲" : "▼"}
-    </span>
-  </button>
-
-  <div
-    className={`overflow-hidden transition-all duration-300 ${
-      showLocations ? "max-h-[1500px] mt-4" : "max-h-0"
-    }`}
-  >
-    {/* Add Location Form */}
-
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <input
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        className="border dark:border-slate-600
-                   bg-gray-50 dark:bg-slate-700
-                   text-gray-800 dark:text-white
-                   p-2 rounded-lg"
-      />
-
-      <input
-        placeholder="Latitude"
-        value={lat}
-        onChange={(e) => setLat(e.target.value)}
-        className="border dark:border-slate-600
-                   bg-gray-50 dark:bg-slate-700
-                   text-gray-800 dark:text-white
-                   p-2 rounded-lg"
-      />
-
-      <input
-        placeholder="Longitude"
-        value={lng}
-        onChange={(e) => setLng(e.target.value)}
-        className="border dark:border-slate-600
-                   bg-gray-50 dark:bg-slate-700
-                   text-gray-800 dark:text-white
-                   p-2 rounded-lg"
-      />
-
-      <button
-        onClick={addLocation}
-        className="bg-blue-500 text-white rounded-lg"
+    <div
+        className="bg-white dark:bg-slate-800
+                  p-6 rounded-2xl shadow-lg mb-8"
       >
-        Add
-      </button>
-    </div>
-
-    {/* Location List */}
-
-    <div className="bg-white dark:bg-slate-800 
-        p-6 rounded-2xl shadow-lg mb-8 overflow-x-auto rounded-2xl shadow-lg">
-        <h3 className="font-semibold text-lg mb-4 
-                       text-gray-700 dark:text-gray-200">
-          Locations
+      <button
+        type="button"
+        onClick={() => setShowLocations((v) => !v)}
+        className="w-full flex items-center justify-between"
+      >
+        <h3 className="text-lg font-semibold">
+          Group Locations ({totalLocations})
         </h3>
-        <table className="min-w-full bg-white dark:bg-slate-800">
 
-          <thead className="bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Title</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Group Name</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Winner</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Action</th>
-            </tr>
-          </thead>
+        <span className="text-xl">
+          {showLocations ? "▲" : "▼"}
+        </span>
+      </button>
 
-          <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
-            {locations.map((loc) => (
-              <tr
-                key={loc.id}
-                className="hover:bg-gray-50 dark:hover:bg-slate-700 transition"
-              >
-                <td className="px-6 py-4 font-semibold text-gray-800 dark:text-white">
-                  {loc.title}
-                </td>
-                <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
-                  {loc.group_name ?? 'GLOBAL LOCATION'}
-                </td>
-                <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
-                  {loc.winner ?? "Not found"}
-                </td>
+      <div
+        className={`overflow-hidden transition-all duration-300 ${
+          showLocations ? "max-h-[1500px] mt-4" : "max-h-0"
+        }`}
+      >
+        {/* Add Location Form */}
 
-                <td className="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400">
-                  <button
-                    onClick={() =>
-                      loc?.is_active
-                        ? disableLocation(loc.id)
-                        : enableLocation(loc.id)
-                    }
-                    className={`px-4 py-1 rounded-lg text-white transition
-                    ${
-                      loc.is_active
-                        ? "bg-red-500 hover:bg-red-600"
-                        : "bg-green-500 hover:bg-green-600"
-                    }`}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <input
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="border dark:border-slate-600
+                      bg-gray-50 dark:bg-slate-700
+                      text-gray-800 dark:text-white
+                      p-2 rounded-lg"
+          />
+
+          <input
+            className="border dark:border-slate-600 
+                       bg-gray-50 dark:bg-slate-700 
+                       text-gray-800 dark:text-white
+                       p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Point"
+            value={point}
+            onChange={(e) => setPoint(e.target.value)}
+          />
+
+          <input
+            placeholder="Latitude"
+            value={lat}
+            onChange={(e) => setLat(e.target.value)}
+            className="border dark:border-slate-600
+                      bg-gray-50 dark:bg-slate-700
+                      text-gray-800 dark:text-white
+                      p-2 rounded-lg"
+          />
+
+          <input
+            placeholder="Longitude"
+            value={lng}
+            onChange={(e) => setLng(e.target.value)}
+            className="border dark:border-slate-600
+                      bg-gray-50 dark:bg-slate-700
+                      text-gray-800 dark:text-white
+                      p-2 rounded-lg"
+          />
+
+          <button
+            onClick={addLocation}
+            className="bg-blue-500 text-white rounded-lg"
+          >
+            Add
+          </button>
+        </div>
+
+        {/* Location List */}
+
+        <div className="bg-white dark:bg-slate-800 
+            p-6 rounded-2xl shadow-lg mb-8 overflow-x-auto rounded-2xl shadow-lg">
+            <h3 className="font-semibold text-lg mb-4 
+                          text-gray-700 dark:text-gray-200">
+              Locations
+            </h3>
+            <table className="min-w-full bg-white dark:bg-slate-800">
+
+              <thead className="bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Title</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Group Name</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Winner</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Point</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold">Action</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
+                {locations.map((loc) => (
+                  <tr
+                    key={loc.id}
+                    className="hover:bg-gray-50 dark:hover:bg-slate-700 transition"
                   >
-                    {loc.is_active ? "Disable" : "Enable"}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
+                    <td className="px-6 py-4 font-semibold text-gray-800 dark:text-white">
+                      {loc.title}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
+                      {loc.group_name ?? 'GLOBAL LOCATION'}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
+                      {loc.winner ?? "Not found"}
+                    </td>
+                    <td className="px-6 py-4 text-gray-700 dark:text-gray-200">
+                      {loc.point ?? 0}
+                    </td>
 
-        </table>
-      </div>
+                    <td className="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400">
+                      <button
+                        onClick={() =>
+                          loc?.is_active
+                            ? disableLocation(loc.id)
+                            : enableLocation(loc.id)
+                        }
+                        className={`px-4 py-1 rounded-lg text-white transition
+                        ${
+                          loc.is_active
+                            ? "bg-red-500 hover:bg-red-600"
+                            : "bg-green-500 hover:bg-green-600"
+                        }`}
+                      >
+                        {loc.is_active ? "Disable" : "Enable"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
 
-      {/* PAGINATION */}
-      <div className="flex flex-wrap justify-center mt-6 gap-2">
+            </table>
+          </div>
 
-        <button
-          disabled={currentPage === 1}
-          onClick={() => handlePageChange(currentPage - 1)}
-          className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 disabled:opacity-50"
-        >
-          ◀
-        </button>
+          {/* PAGINATION */}
+          <div className="flex flex-wrap justify-center mt-6 gap-2">
 
-        {Array.from({ length: loadedPages }).map((_, i) => {
-          const page = i + 1;
-
-          return (
             <button
-              key={page}
-              onClick={() => handlePageChange(page)}
-              className={`px-3 py-1 rounded-lg transition ${
-                currentPage === page
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-white"
-              }`}
+              disabled={currentPage === 1}
+              onClick={() => handlePageChange(currentPage - 1)}
+              className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 disabled:opacity-50"
             >
-              {page}
+              ◀
             </button>
-          );
-        })}
 
-        <button
-          disabled={currentPage === totalPages}
-          onClick={() => handlePageChange(currentPage + 1)}
-          className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 disabled:opacity-50"
-        >
-          ▶
-        </button>
+            {Array.from({ length: loadedPages }).map((_, i) => {
+              const page = i + 1;
+
+              return (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`px-3 py-1 rounded-lg transition ${
+                    currentPage === page
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-white"
+                  }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(currentPage + 1)}
+              className="px-3 py-1 rounded-lg bg-gray-200 dark:bg-slate-700 disabled:opacity-50"
+            >
+              ▶
+            </button>
+          </div>
       </div>
-  </div>
-</div>
-
+    </div>
 
     <div>
        <button

@@ -4,8 +4,9 @@ export const getTopThree = async (req, res) => {
  try {
   const { page, limit } = req.query;
   const result = await pool.query(
-   `SELECT id, name, points
-    FROM users
+   `SELECT u.id, u.name, COALESCE(l.points, 0) AS points
+    FROM users u
+    LEFT JOIN leaders l ON u.id = l.user_id AND l.group_id IS NULL
     ORDER BY points DESC
     LIMIT $1
     OFFSET $2

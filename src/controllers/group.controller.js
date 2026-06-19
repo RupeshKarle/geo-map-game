@@ -46,26 +46,26 @@ export const groupInfo = async (req, res) => {
  const { groupId } = req.params;
  try {
   const result = await pool.query(
-   `SELECT
-    g.id,
-    g.name,
-    COALESCE(
-      (
+   `SELECT 
+      g.id,
+      g.name,
+      COALESCE(m.members_json, '[]'::json) AS members
+    FROM groups g
+    LEFT JOIN LATERAL (
         SELECT json_agg(
-          json_build_object(
-            'id', u.id,
-            'name', u.name,
-            'email', u.email
-          )
-          ORDER BY array_position(g.members, u.id)
-        )
-        FROM users u
-        WHERE u.id = ANY(g.members)
-      ),
-      '[]'::json
-    ) AS members
-   FROM groups g
-   WHERE g.id = $1;
+            json_build_object(
+                'id', u.id,
+                'name', u.name,
+                'email', u.email,
+                'points', COALESCE(l.points, 0) -- Safely defaults to 0 if no leader record exists
+            )
+            ORDER BY COALESCE(l.points, 0) DESC, u.name ASC
+        ) AS members_json
+        FROM unnest(g.members) WITH ORDINALITY AS arr(user_id, ord)
+        JOIN users u ON u.id = arr.user_id
+        LEFT JOIN leaders l ON l.user_id = u.id AND l.group_id = g.id
+    ) m ON TRUE
+    WHERE g.id = $1::INTEGER;
   `,
    [groupId]
   );
