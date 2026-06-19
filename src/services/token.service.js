@@ -21,12 +21,12 @@ export const createRefreshToken = async (tokenData, deviceInfo) => {
  const tokenHash = await argon2.hash(refreshToken);
 
  await pool.query(
-  `DELETE FROM refresh_tokens WHERE user_id = $1`,
+  `DELETE FROM public.refresh_tokens WHERE user_id = $1`,
   [tokenData.user_id]
  );
 
  await pool.query(
-  `INSERT INTO refresh_tokens(token_hash, user_id, device_info, expires_at) VALUES($1, $2, $3, NOW() + INTERVAL '7 days')`,
+  `INSERT INTO public.refresh_tokens(token_hash, user_id, device_info, expires_at) VALUES($1, $2, $3, NOW() + INTERVAL '7 days')`,
   [tokenHash, tokenData.user_id, deviceInfo]
  );
 
@@ -42,7 +42,7 @@ export const verifyRefreshToken = async (token) => {
  if (!decoded || !decoded.user_id) return null;
 
  const result = await pool.query(
-  `SELECT * FROM refresh_tokens WHERE user_id = $1 AND expires_at > NOW() AND revoked = false`,
+  `SELECT * FROM public.refresh_tokens WHERE user_id = $1 AND expires_at > NOW() AND revoked = false`,
   [decoded.user_id]
  );
 
