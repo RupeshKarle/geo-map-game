@@ -58,7 +58,7 @@ io.use((socket, next) => {
 
 // Socket connection
 io.on("connection", (socket) => {
-
+  
   socket.on('join_location', (locationId) => {
     socket.join(`location_${locationId}`);
     // console.log(

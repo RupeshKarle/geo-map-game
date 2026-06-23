@@ -4,23 +4,49 @@ let socket = null;
 
 const listeners = new Set();
 
-export const connectSocket = (token) => {
+const notify = () => {
+  listeners.forEach((cb) => cb(socket));
+};
 
-  if (!token) return null;
+export const connectSocket = (
+  token,
+  force = false
+) => {
+
+  if (
+    !force &&
+    (socket?.connected || socket?.active)
+  ) {
+    return socket;
+  }
 
   if (socket) {
     socket.disconnect();
   }
 
-  socket = io(import.meta.env.VITE_SOCKET_URL, {
-    auth: {
-      token,
-    },
-    transports: ["websocket"],
+  socket = io(
+    import.meta.env.VITE_SOCKET_URL,
+    {
+      auth: {
+        token,
+      },
+      transports: ["websocket"],
+    }
+  );
+
+  socket.on("connect", () => {
+
+    notify(); // IMPORTANT
   });
 
-  // notify subscribers
-  listeners.forEach((cb) => cb(socket));
+  socket.on("connect_error", (err) => {
+    console.log(
+      "SOCKET ERROR",
+      err.message
+    );
+  });
+
+  notify(); // IMPORTANT
 
   return socket;
 };
@@ -31,7 +57,7 @@ export const disconnectSocket = () => {
     socket.disconnect();
     socket = null;
 
-    listeners.forEach((cb) => cb(null));
+    notify(); // IMPORTANT
   }
 };
 
@@ -40,6 +66,9 @@ export const getSocket = () => socket;
 export const subscribeSocket = (callback) => {
 
   listeners.add(callback);
+
+  // immediately send current socket
+  callback(socket);
 
   return () => {
     listeners.delete(callback);

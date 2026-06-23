@@ -1,6 +1,5 @@
 import axios from 'axios';
 const APP_BASE = "/geo-map-game/#";
-import { useSocket } from '../context/SocketContext.jsx';
 import { connectSocket } from "../services/socketService.js";
 
 const api = axios.create({
@@ -34,10 +33,9 @@ api.interceptors.response.use(
       try {
         const res = await axios.post(`${import.meta.env.VITE_API_URL}/refresh-token`,{},{ withCredentials: true });
         localStorage.setItem('token', res.data.access_token)
-        connectSocket(res.data.access_token);
+        connectSocket(res.data.access_token, true);
         return api(originalRequest);
       } catch (err) {
-        console.log({err});
         return Promise.reject(err);
       }
       // Unauthorized → token expired / invalid

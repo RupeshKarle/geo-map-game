@@ -1,12 +1,10 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { useSocket } from '../context/SocketContext.jsx';
-import { disconnectSocket } from "../services/socketService.js";
+import { getSocket, disconnectSocket, subscribeSocket } from "../services/socketService.js";
 import notificationSound from '../assets/new.mp3';
 import api from "../api/axios.js";
 
 export default function Layout({ children }) {
-  const { socket } = useSocket();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const [dark, setDark] = useState(false);
@@ -25,27 +23,69 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
-    if(!socket) return;
-    socket.on("new-location", async (data) => {
-      if (data.user_id == user.id) return;
-      if (data.group_id) {
-        let res = await checkGroup(data.group_id);
-        if (res?.data?.error) {
-          return false;
-        }
-      }
-      setNotification(data);
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.volume = 0.7;
-        audioRef.current.play().catch(() => {});
-      }
-    });
 
-    return () => {
-      socket.off("new-location");
-    };
-  }, [socket]);
+    let activeSocket = null;
+
+  const handleNewLocation = async (data) => {
+
+    if (data.user_id == user.id) return;
+
+    if (data.group_id) {
+
+      let res = await checkGroup(data.group_id);
+
+      if (res?.data?.error) {
+        return;
+      }
+    }
+
+    setNotification(data);
+
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.volume = 0.7;
+      audioRef.current.play().catch(() => {});
+    }
+  };
+
+  const unsubscribe = subscribeSocket((socket) => {
+
+    if (!socket) return;
+
+    // remove old listener
+    if (activeSocket) {
+      activeSocket.off(
+        "new-location",
+        handleNewLocation
+      );
+    }
+
+    activeSocket = socket;
+
+    socket.off(
+      "new-location",
+      handleNewLocation
+    );
+
+    socket.on(
+      "new-location",
+      handleNewLocation
+    );
+  });
+
+  return () => {
+
+    unsubscribe();
+
+    if (activeSocket) {
+      activeSocket.off(
+        "new-location",
+        handleNewLocation
+      );
+    }
+  };
+
+}, []);
 
   useEffect(() => {
     if (dark) {

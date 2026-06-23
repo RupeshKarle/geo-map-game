@@ -15,8 +15,39 @@ import Group from './pages/Group';
 import Profile from './pages/Profile';
 import SendInvite from './pages/SendInvite';
 import GroupInvite from './pages/GroupInvite';
+import { useEffect } from 'react';
+import { connectSocket, getSocket } from './services/socketService.js';
+import api from './api/axios.js';
 
 function App() {
+
+  useEffect(() => {
+
+    const init = async () => {
+
+      const token = localStorage.getItem("token");
+
+      if (!token) return;
+
+      try {
+
+        // validate token
+        await api.get("/users/profile");
+
+        connectSocket(token);
+
+      } catch (err) {
+
+        console.log("TOKEN INVALID", { err });
+
+      }
+    };
+
+    init();
+
+  }, []);
+
+
   return (
     <HashRouter>
       <Routes>

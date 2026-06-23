@@ -5,7 +5,7 @@ import api from "../api/axios";
 import "leaflet/dist/leaflet.css";
 import confetti from "canvas-confetti";
 import winSound from "../assets/win.wav";
-import { useSocket } from '../context/SocketContext.jsx';
+import { getSocket } from '../services/socketService.js';
 import L from "leaflet";
 
 const myPulseIcon = new L.DivIcon({
@@ -52,7 +52,7 @@ function ClickHandler({ onMapClick }) {
 }
 
 export default function Game() {
-  const { socket } = useSocket();
+  const socket = getSocket();
   const { locationId } = useParams();
   const navigate = useNavigate();
 
@@ -91,6 +91,7 @@ export default function Game() {
   useEffect(() => {
     if(!socket) return;
     const handleGuess = (data) => {
+      if (data?.user_id == userId) return;
       setPlayersGuesses((prev) => {
         return {
           ...prev,

@@ -1,15 +1,7 @@
 import {
  createContext,
- useContext,
- useEffect,
- useState
+ useContext
 } from 'react';
-
-import {
-  getSocket,
-  subscribeSocket
-} from "../services/socketService.js";
-
 
 const SocketContext = createContext(null);
 
@@ -18,25 +10,9 @@ export const useSocket = () => {
 }
 
 export const SocketProvider = ({ children }) => {
- const [socket, setSocket] = useState(
-    getSocket()
-  );
-
-  useEffect(() => {
-
-    const unsubscribe = subscribeSocket(
-      setSocket
-    );
-
-    return unsubscribe;
-
-  }, []);
-
  return (
   <SocketContext.Provider
-   value={{
-    socket
-   }}
+   value={{}}
   >
    {children}
   </SocketContext.Provider>

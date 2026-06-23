@@ -90,7 +90,14 @@ export const enableLocation = async (req, res) => {
     if (!result.rows.length) {
       return res.status(403).json({ message: 'Location not found' });
     }
-  
+    
+    io.emit('new-location', {
+      id: id,
+      title: result?.rows[0]?.title,
+      group_id,
+      user_id: (req?.user?.user_id)
+    });
+
     res.send(result.rows[0]);
   } catch (err) {
     res.status(500).json({ message: 'Failed to enable location' });
