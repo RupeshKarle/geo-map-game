@@ -20,6 +20,7 @@ import groupRoutes from './routes/group.routes.js';
 import invitesRoutes from './routes/invite.routes.js';
 import { validateToken } from './controllers/invite.controller.js';
 import { refreshToken } from './controllers/auth.controller.js';
+import { verifyAccessToken } from './services/token.service.js';
 
 dotenv.config();
 
@@ -39,14 +40,43 @@ export const io = new Server(server, {
   }
 });
 
+io.use((socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+
+    if (!token) {
+      return next(new Error("Unauthorized"));
+    }
+
+    const decoded = verifyAccessToken(token);
+    socket.user = decoded;
+    next();
+  } catch (err) {
+    next(new Error("Unauthorized"));
+  }
+});
 
 // Socket connection
 io.on("connection", (socket) => {
-  socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+
+  socket.on('join_location', (locationId) => {
+    socket.join(`location_${locationId}`);
+    // console.log(
+    //   `User ${socket.user.user_id} joined location_${locationId}`
+    // );
+  });
+
+  socket.on('leave_location', (locationId) => {
+    socket.leave(`location_${locationId}`);
+    // console.log(
+    //   `User ${socket.user.user_id} leaved location_${locationId}`
+    // );
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.log("User disconnected:", reason);
   });
 });
-
 
 // Rate Limiter
 const limiter = rateLimit({
@@ -75,7 +105,7 @@ app.use('/health', healthRoutes);
 app.use('/', pubRoutes);
 
 app.post('/refresh-token', refreshToken);
-app.use('/invites/validate', authenticate, validateToken)
+app.use('/invites/validate', authenticate, validateToken);
 app.use('/auth', authenticate, authRoutes);
 app.use('/game', authenticate, gameRoutes);
 app.use('/users', authenticate, profileRoutes);

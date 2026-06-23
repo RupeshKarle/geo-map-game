@@ -1,10 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import socket from '../socket.js';
+import { useSocket } from '../context/SocketContext.jsx';
+import { disconnectSocket } from "../services/socketService.js";
 import notificationSound from '../assets/new.mp3';
 import api from "../api/axios.js";
 
 export default function Layout({ children }) {
+  const { socket } = useSocket();
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const [dark, setDark] = useState(false);
@@ -23,6 +25,7 @@ export default function Layout({ children }) {
   }, []);
 
   useEffect(() => {
+    if(!socket) return;
     socket.on("new-location", async (data) => {
       if (data.user_id == user.id) return;
       if (data.group_id) {
@@ -42,7 +45,7 @@ export default function Layout({ children }) {
     return () => {
       socket.off("new-location");
     };
-  }, []);
+  }, [socket]);
 
   useEffect(() => {
     if (dark) {
@@ -61,6 +64,7 @@ export default function Layout({ children }) {
   const logout = async () => {
     try{
       await api.post("/auth/logout");
+      disconnectSocket()
       localStorage.clear();
       navigate("/login");
     } catch (err) {

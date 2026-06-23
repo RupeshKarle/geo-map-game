@@ -19,6 +19,10 @@ body {
   overflow: hidden !important;
 }
 
+.leaflet-control-zoom {
+  display: none;
+}
+
 /* ============================= */
 /* 🔥 ANIMATIONS (Clean Version) */
 /* ============================= */

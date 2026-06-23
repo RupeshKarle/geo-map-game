@@ -1,10 +1,36 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, Marker, TileLayer, useMap, useMapEvents, Tooltip } from "react-leaflet";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import "leaflet/dist/leaflet.css";
 import confetti from "canvas-confetti";
 import winSound from "../assets/win.wav";
+import { useSocket } from '../context/SocketContext.jsx';
+import L from "leaflet";
+
+const myPulseIcon = new L.DivIcon({
+  className: "",
+  html: `
+    <div class="relative flex items-center justify-center">
+      <div class="absolute w-8 h-8 rounded-full bg-red-500 opacity-40 animate-ping"></div>
+      <div class="w-4 h-4 rounded-full bg-red-600 border-2 border-white shadow-xl"></div>
+    </div>
+  `,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+});
+
+const otherPulseIcon = new L.DivIcon({
+  className: "",
+  html: `
+    <div class="relative flex items-center justify-center">
+      <div class="absolute w-7 h-7 rounded-full bg-blue-500 opacity-40 animate-ping"></div>
+      <div class="w-3 h-3 rounded-full bg-blue-600 border-2 border-white shadow-lg"></div>
+    </div>
+  `,
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+});
 
 /* ✅ Proper way to store map instance */
 function MapRefSetter({ mapRef }) {
@@ -26,6 +52,7 @@ function ClickHandler({ onMapClick }) {
 }
 
 export default function Game() {
+  const { socket } = useSocket();
   const { locationId } = useParams();
   const navigate = useNavigate();
 
@@ -36,8 +63,10 @@ export default function Game() {
   const hasStartedRef = useRef(false);
 
   const [sessionId, setSessionId] = useState(null);
+  const [userId, setUserId] = useState(null);
   const [location, setLocation] = useState(null);
   const [popupData, setPopupData] = useState(null);
+  const [playersGuesses, setPlayersGuesses] = useState({});
   const [guessPosition, setGuessPosition] = useState(null);
   /* ✅ Start Game Session */
   useEffect(() => {
@@ -46,6 +75,7 @@ export default function Game() {
         const res = await api.post(`/game/start/${locationId}`);
         setSessionId(res.data.id);
         setLocation(res.data?.title);
+        setUserId(res.data?.user_id);
       } catch (err) {
         alert(err?.response?.data?.message ?? "Please login");
         navigate("/");
@@ -56,6 +86,73 @@ export default function Game() {
         hasStartedRef.current = true;
         startGame();
       }  }, [locationId, navigate]);
+
+  
+  useEffect(() => {
+    if(!socket) return;
+    const handleGuess = (data) => {
+      setPlayersGuesses((prev) => {
+        return {
+          ...prev,
+          [data.user_id]: { ...data, createdAt: Date.now() }
+        };
+      });
+    };
+
+    socket.on("guessed", handleGuess);
+
+    return () => {
+      socket.off("guessed", handleGuess);
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    if (!socket || !locationId) return;
+
+    socket.emit("join_location", locationId);
+
+    return () => {
+      socket.emit("leave_location", locationId);
+    };
+  }, [socket, locationId]);
+
+  useEffect(() => {
+
+    const interval = setInterval(() => {
+
+      setPlayersGuesses((prev) => {
+
+        const now = Date.now();
+
+        let changed = false;
+
+        const updated = {};
+
+        for (const [id, player] of Object.entries(prev)) {
+
+          const isAlive =
+            now - player.createdAt < 5000;
+
+          if (isAlive) {
+            updated[id] = player;
+          } else {
+            changed = true;
+          }
+        }
+
+        // avoid unnecessary rerender
+        if (!changed) {
+          return prev;
+        }
+        return updated;
+
+      });
+
+    }, 1000);
+
+    return () => clearInterval(interval);
+
+  }, []);
 
   useEffect(() => {
   if (popupData?.isWinner) {
@@ -184,9 +281,43 @@ export default function Game() {
         maxBoundsViscosity={1.0}
         style={{ height: "100%", width: "100%" }}
       >
-        {guessPosition && (
+        {/* {guessPosition && (
           <Marker position={guessPosition} />
+        )} */}
+        {guessPosition && (
+          <Marker
+            position={guessPosition}
+            icon={myPulseIcon}
+          />
         )}
+          
+        {Object.entries(playersGuesses).map(([id, player]) => {
+          if (!Object.keys(player).length) return null;
+          // skip current user's own marker
+          if (Number(id) === Number(userId)) return null;
+
+          return (
+            <Marker
+              key={id}
+              position={[
+                player?.lat,
+                player?.lng
+              ]}
+              icon={otherPulseIcon}
+            >
+              <Tooltip
+                permanent
+                direction="top"
+                offset={[0, -10]}
+                opacity={1}
+              >
+                <span className="font-semibold text-xs">
+                  {player?.name}
+                </span>
+              </Tooltip>
+            </Marker>
+          );
+        })}
         <MapRefSetter mapRef={mapRef} />
 
         <TileLayer

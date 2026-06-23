@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../api/axios";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { connectSocket } from "../services/socketService.js";
 
 export default function Register() {
   const [searchParam] = useSearchParams();
@@ -30,6 +31,7 @@ export default function Register() {
       const res = await api.post("/register", { name, email, password, token });
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      connectSocket(res.data.token);
       navigate("/");
     } catch (err) {
       if (err.status != 201) setError(err?.response?.data?.message ?? "Registration failed. Try again.");

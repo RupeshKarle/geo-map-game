@@ -1,6 +1,7 @@
 import { useState } from "react";
 import api from "../api/axios";
 import { useNavigate, Link, useSearchParams } from "react-router-dom";
+import { connectSocket } from "../services/socketService.js";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -22,6 +23,7 @@ export default function Login() {
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      connectSocket(res.data.token);
       if (token) {
         return navigate(`/group-invite?token=${token}`);
       }

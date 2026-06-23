@@ -1,5 +1,7 @@
 import axios from 'axios';
 const APP_BASE = "/geo-map-game/#";
+import { useSocket } from '../context/SocketContext.jsx';
+import { connectSocket } from "../services/socketService.js";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
@@ -30,7 +32,9 @@ api.interceptors.response.use(
     if (status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const res = await axios.post(`http://localhost:5000/refresh-token`,{},{ withCredentials: true });
+        const res = await axios.post(`${import.meta.env.VITE_API_URL}/refresh-token`,{},{ withCredentials: true });
+        localStorage.setItem('token', res.data.access_token)
+        connectSocket(res.data.access_token);
         return api(originalRequest);
       } catch (err) {
         console.log({err});

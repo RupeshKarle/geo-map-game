@@ -166,7 +166,7 @@ export const refreshToken = async (req, res) => {
       maxAge: 15 * 60 * 1000 // 15 minutes
     });
 
-    res.json({ message: 'Token refreshed successfully' });
+    res.json({ message: 'Token refreshed successfully', access_token: accessToken });
   } catch (err) {
     return res.status(401).json({ message: 'Invalid refresh token' });
   }
