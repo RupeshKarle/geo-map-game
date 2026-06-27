@@ -1,0 +1,9 @@
+     battle             streak                    
+id,                  user_id,
+group_a,             daily_streak,
+group_b,             daily_streak_freeze,
+location_id,         winning_streak,
+winner,              winning_streak,
+point                group_win_streak,
+                     group_cont_streak,
+                     updated_on

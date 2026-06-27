@@ -57,16 +57,18 @@ function App() {
 
         {/* Secured Routes */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Layout><Locations /></Layout>} />
-          <Route path="/profile" element={<Layout><Profile /></Layout>} />
-          <Route path="/leaderboard" element={<Layout><Leaderboard /></Layout>} />
-          <Route path="/admin" element={<Layout><Admin /></Layout>} />
-          <Route path="/admin-req" element={<Layout><AdminReq /></Layout>} />
-          <Route path="/game/:locationId" element={<Game />} />
-          <Route path="/manage-group" element={<Layout><ManageGroup /></Layout>} />
-          <Route path="/group/:groupId" element={<Layout><Group /></Layout>} />
-          <Route path="/invite" element={<Layout><SendInvite /></Layout>} />
-          <Route path="/group-invite" element={<Layout><GroupInvite /></Layout>} />
+          <Route element={<Layout />}>
+            <Route path="/" element={<Locations />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin-req" element={<AdminReq />} />
+            <Route path="/game/:locationId" element={<Game />} />
+            <Route path="/manage-group" element={<ManageGroup />} />
+            <Route path="/group/:groupId" element={<Group />} />
+            <Route path="/invite" element={<SendInvite />} />
+            <Route path="/group-invite" element={<GroupInvite />} />
+          </Route>
         </Route>
       </Routes>
     </HashRouter>

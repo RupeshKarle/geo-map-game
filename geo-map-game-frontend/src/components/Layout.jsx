@@ -1,10 +1,10 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, Outlet } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { getSocket, disconnectSocket, subscribeSocket } from "../services/socketService.js";
 import notificationSound from '../assets/new.mp3';
 import api from "../api/axios.js";
 
-export default function Layout({ children }) {
+export default function Layout() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user"));
   const [dark, setDark] = useState(false);
@@ -318,7 +318,7 @@ export default function Layout({ children }) {
 
       {/* PAGE CONTENT */}
       <div className="max-w-7xl mx-auto p-6 w-full">
-        {children}
+        <Outlet />
       </div>
     
     {/* 🔔 Notification Toast */}
