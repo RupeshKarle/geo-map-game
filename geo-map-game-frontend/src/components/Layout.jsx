@@ -1,7 +1,11 @@
 import { Link, useNavigate, Outlet } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
-import { getSocket, disconnectSocket, subscribeSocket } from "../services/socketService.js";
-import notificationSound from '../assets/new.mp3';
+import {
+  getSocket,
+  disconnectSocket,
+  subscribeSocket,
+} from "../services/socketService.js";
+import notificationSound from "../assets/new.mp3";
 import api from "../api/axios.js";
 
 export default function Layout() {
@@ -23,69 +27,51 @@ export default function Layout() {
   }, []);
 
   useEffect(() => {
-
     let activeSocket = null;
 
-  const handleNewLocation = async (data) => {
+    const handleNewLocation = async (data) => {
+      if (data.user_id == user.id) return;
 
-    if (data.user_id == user.id) return;
+      if (data.group_id) {
+        let res = await checkGroup(data.group_id);
 
-    if (data.group_id) {
-
-      let res = await checkGroup(data.group_id);
-
-      if (res?.data?.error) {
-        return;
+        if (res?.data?.error) {
+          return;
+        }
       }
-    }
 
-    setNotification(data);
+      setNotification(data);
 
-    if (audioRef.current) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.volume = 0.7;
-      audioRef.current.play().catch(() => {});
-    }
-  };
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.volume = 0.7;
+        audioRef.current.play().catch(() => {});
+      }
+    };
 
-  const unsubscribe = subscribeSocket((socket) => {
+    const unsubscribe = subscribeSocket((socket) => {
+      if (!socket) return;
 
-    if (!socket) return;
+      // remove old listener
+      if (activeSocket) {
+        activeSocket.off("new-location", handleNewLocation);
+      }
 
-    // remove old listener
-    if (activeSocket) {
-      activeSocket.off(
-        "new-location",
-        handleNewLocation
-      );
-    }
+      activeSocket = socket;
 
-    activeSocket = socket;
+      socket.off("new-location", handleNewLocation);
 
-    socket.off(
-      "new-location",
-      handleNewLocation
-    );
+      socket.on("new-location", handleNewLocation);
+    });
 
-    socket.on(
-      "new-location",
-      handleNewLocation
-    );
-  });
+    return () => {
+      unsubscribe();
 
-  return () => {
-
-    unsubscribe();
-
-    if (activeSocket) {
-      activeSocket.off(
-        "new-location",
-        handleNewLocation
-      );
-    }
-  };
-
-}, []);
+      if (activeSocket) {
+        activeSocket.off("new-location", handleNewLocation);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (dark) {
@@ -98,17 +84,18 @@ export default function Layout() {
   }, [dark]);
 
   const checkGroup = async (group_id) => {
-    return await api.get(`users/belongs?groupId=${group_id}`)
-  }
+    return await api.get(`users/belongs?groupId=${group_id}`);
+  };
 
   const logout = async () => {
-    try{
+    try {
       await api.post("/auth/logout");
-      disconnectSocket()
+      disconnectSocket();
       localStorage.clear();
       navigate("/login");
     } catch (err) {
-      if (err.status != 201) alert(err?.response?.data?.message ?? "Logout request failed.");
+      if (err.status != 201)
+        alert(err?.response?.data?.message ?? "Logout request failed.");
     }
   };
 
@@ -136,10 +123,8 @@ export default function Layout() {
 
   return (
     <div className="relative min-h-screen w-full">
-
       {/* NAVBAR */}
       <nav className="bg-white dark:bg-slate-800 shadow-md px-6 py-4 flex justify-between items-center">
-
         {/* LEFT */}
         <div className="flex items-center space-x-6">
           <span className="text-xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
@@ -147,18 +132,30 @@ export default function Layout() {
           </span>
 
           <div className="hidden md:flex space-x-6 font-medium">
-            <Link to="/" className="hover:text-blue-600">Locations</Link>
-            <Link to="/leaderboard" className="hover:text-blue-600">Leaderboard</Link>
+            <Link to="/" className="hover:text-blue-600">
+              Locations
+            </Link>
+            <Link to="/leaderboard" className="hover:text-blue-600">
+              Leaderboard
+            </Link>
             {user?.role === "admin" && (
               <>
-                <Link to="/admin-req" className="hover:text-blue-600">Admin Requests</Link>
-                <Link to="/admin" className="hover:text-blue-600">Admin</Link>
+                <Link to="/admin-req" className="hover:text-blue-600">
+                  Admin Requests
+                </Link>
+                <Link to="/admin" className="hover:text-blue-600">
+                  Admin
+                </Link>
               </>
             )}
             {user?.role === "group_admin" && (
               <>
-                <Link to="/manage-group" className="hover:text-blue-600">Manage Group</Link>
-                <Link to="/invite" className="hover:text-blue-600">Invite</Link>
+                <Link to="/manage-group" className="hover:text-blue-600">
+                  Manage Group
+                </Link>
+                <Link to="/invite" className="hover:text-blue-600">
+                  Invite
+                </Link>
               </>
             )}
           </div>
@@ -166,7 +163,6 @@ export default function Layout() {
 
         {/* RIGHT */}
         <div className="flex items-center space-x-4">
-
           {/* Dark Toggle */}
           <button
             onClick={() => setDark(!dark)}
@@ -187,8 +183,10 @@ export default function Layout() {
               </div>
 
               {profileOpen && (
-                <div className="absolute right-0 mt-2 w-auto bg-white dark:bg-slate-800 
-                                shadow-lg rounded-lg py-2 text-sm">
+                <div
+                  className="absolute right-0 mt-2 w-auto bg-white dark:bg-slate-800 
+                                shadow-lg rounded-lg py-2 text-sm"
+                >
                   <p className="px-4 py-2 border-b dark:border-slate-700">
                     {user.email}
                   </p>
@@ -211,10 +209,7 @@ export default function Layout() {
           )}
 
           {/* MOBILE MENU BUTTON */}
-          <button
-            className="md:hidden text-2xl"
-            onClick={() => setOpen(!open)}
-          >
+          <button className="md:hidden text-2xl" onClick={() => setOpen(!open)}>
             ☰
           </button>
         </div>
@@ -222,14 +217,15 @@ export default function Layout() {
 
       {/* MOBILE MENU */}
       {open && (
-        <div className="md:hidden 
+        <div
+          className="md:hidden 
                         bg-white dark:bg-slate-800 
                         px-6 py-5 
                         space-y-2 
                         shadow-lg 
                         border-t border-gray-200 dark:border-slate-700
-                        animate-fadeIn">
-
+                        animate-fadeIn"
+        >
           <Link
             to="/"
             onClick={() => setOpen(false)}
@@ -273,25 +269,28 @@ export default function Layout() {
           {user?.role === "group_admin" && (
             <>
               <Link
-              to="/manage-group"
-              onClick={() => setOpen(false)}
-              className="block w-full py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 px-2"
-              >Manage Group</Link>
+                to="/manage-group"
+                onClick={() => setOpen(false)}
+                className="block w-full py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 px-2"
+              >
+                Manage Group
+              </Link>
               <Link
-              to="/invite"
-              onClick={() => setOpen(false)}
-              className="block w-full py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 px-2"
-              >Invite</Link>
+                to="/invite"
+                onClick={() => setOpen(false)}
+                className="block w-full py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 px-2"
+              >
+                Invite
+              </Link>
             </>
           )}
 
           {user && (
             <button
               onClick={() => {
-                  setOpen(false);
-                  profilePage();
-                }
-              }
+                setOpen(false);
+                profilePage();
+              }}
               className="block w-full text-left py-2 px-2 rounded-lg 
                 hover:bg-gray-100
                 dark:hover:bg-slate-700"
@@ -317,11 +316,11 @@ export default function Layout() {
       )}
 
       {/* PAGE CONTENT */}
-      <div className="max-w-7xl mx-auto p-6 w-full">
+      <div className="max-w-7xl mx-auto w-full">
         <Outlet />
       </div>
-    
-    {/* 🔔 Notification Toast */}
+
+      {/* 🔔 Notification Toast */}
       {notification && (
         <div
           className="
@@ -337,11 +336,9 @@ export default function Layout() {
         "
         >
           <div className="flex items-start gap-3">
-
             <div className="text-2xl">📍</div>
 
             <div className="flex-1">
-
               <h3 className="font-semibold text-gray-800 dark:text-white">
                 New Location Available
               </h3>
@@ -379,20 +376,14 @@ export default function Layout() {
                 >
                   Dismiss
                 </button>
-
               </div>
-
             </div>
           </div>
         </div>
       )}
 
       {/* 🔊 Audio */}
-      <audio
-        ref={audioRef}
-        src={notificationSound}
-        preload="auto"
-      />
+      <audio ref={audioRef} src={notificationSound} preload="auto" />
     </div>
   );
 }

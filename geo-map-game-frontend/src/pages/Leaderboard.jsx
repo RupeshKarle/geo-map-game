@@ -18,9 +18,7 @@ export default function Leaderboard() {
     loadingRef.current = true;
 
     try {
-      const res = await api.get(
-        `/leaderboard?page=${page}&limit=${limit}`
-      );
+      const res = await api.get(`/leaderboard?page=${page}&limit=${limit}`);
 
       setPages((prev) => ({
         ...prev,
@@ -53,8 +51,7 @@ export default function Leaderboard() {
   const leaders = pages[currentPage] || [];
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-
+    <div className="max-w-6xl mx-auto p-4">
       <h2 className="text-3xl md:text-4xl font-bold mb-8 text-white">
         🏆 Leaderboard
       </h2>
@@ -62,12 +59,17 @@ export default function Leaderboard() {
       {/* TABLE */}
       <div className="overflow-x-auto rounded-2xl shadow-lg">
         <table className="min-w-full bg-white dark:bg-slate-800">
-
           <thead className="bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-200">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Rank</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Player</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold">Points</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">
+                Rank
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">
+                Player
+              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold">
+                Points
+              </th>
             </tr>
           </thead>
 
@@ -91,13 +93,11 @@ export default function Leaderboard() {
               </tr>
             ))}
           </tbody>
-
         </table>
       </div>
 
       {/* PAGINATION */}
       <div className="flex flex-wrap justify-center mt-6 gap-2">
-
         <button
           disabled={currentPage === 1}
           onClick={() => handlePageChange(currentPage - 1)}
@@ -131,9 +131,7 @@ export default function Leaderboard() {
         >
           ▶
         </button>
-
       </div>
-
     </div>
   );
 }

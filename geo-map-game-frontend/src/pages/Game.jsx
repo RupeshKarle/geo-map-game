@@ -1,11 +1,18 @@
 import { useRef, useState, useEffect, useCallback } from "react";
-import { MapContainer, Marker, TileLayer, useMap, useMapEvents, Tooltip } from "react-leaflet";
+import {
+  MapContainer,
+  Marker,
+  TileLayer,
+  useMap,
+  useMapEvents,
+  Tooltip,
+} from "react-leaflet";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/axios";
 import "leaflet/dist/leaflet.css";
 import confetti from "canvas-confetti";
 import winSound from "../assets/win.wav";
-import { getSocket } from '../services/socketService.js';
+import { getSocket } from "../services/socketService.js";
 import L from "leaflet";
 
 const myPulseIcon = new L.DivIcon({
@@ -83,19 +90,19 @@ export default function Game() {
     };
 
     if (locationId && !hasStartedRef.current) {
-        hasStartedRef.current = true;
-        startGame();
-      }  }, [locationId, navigate]);
+      hasStartedRef.current = true;
+      startGame();
+    }
+  }, [locationId, navigate]);
 
-  
   useEffect(() => {
-    if(!socket) return;
+    if (!socket) return;
     const handleGuess = (data) => {
       if (data?.user_id == userId) return;
       setPlayersGuesses((prev) => {
         return {
           ...prev,
-          [data.user_id]: { ...data, createdAt: Date.now() }
+          [data.user_id]: { ...data, createdAt: Date.now() },
         };
       });
     };
@@ -118,11 +125,8 @@ export default function Game() {
   }, [socket, locationId]);
 
   useEffect(() => {
-
     const interval = setInterval(() => {
-
       setPlayersGuesses((prev) => {
-
         const now = Date.now();
 
         let changed = false;
@@ -130,9 +134,7 @@ export default function Game() {
         const updated = {};
 
         for (const [id, player] of Object.entries(prev)) {
-
-          const isAlive =
-            now - player.createdAt < 5000;
+          const isAlive = now - player.createdAt < 5000;
 
           if (isAlive) {
             updated[id] = player;
@@ -146,114 +148,110 @@ export default function Game() {
           return prev;
         }
         return updated;
-
       });
-
     }, 1000);
 
     return () => clearInterval(interval);
-
   }, []);
 
   useEffect(() => {
-  if (popupData?.isWinner) {
-    // Confetti burst
-    confetti({
-      particleCount: 150,
-      spread: 80,
-      origin: { y: 0.6 },
-    });
-
-    if (winSoundRef.current) {
-      winSoundRef.current.currentTime = 0;
-      winSoundRef.current.volume = 0.6;
-      winSoundRef.current.play().catch(() => {});
-    }
-
-    // Extra side burst for premium feel
-    setTimeout(() => {
+    if (popupData?.isWinner) {
+      // Confetti burst
       confetti({
-        particleCount: 80,
-        angle: 60,
-        spread: 55,
-        origin: { x: 0 },
+        particleCount: 150,
+        spread: 80,
+        origin: { y: 0.6 },
       });
 
-      confetti({
-        particleCount: 80,
-        angle: 120,
-        spread: 55,
-        origin: { x: 1 },
-      });
+      if (winSoundRef.current) {
+        winSoundRef.current.currentTime = 0;
+        winSoundRef.current.volume = 0.6;
+        winSoundRef.current.play().catch(() => {});
+      }
+
+      // Extra side burst for premium feel
       setTimeout(() => {
-        navigate('/');
-      }, 2000);
-    }, 150);
-  }
-}, [popupData]);
+        confetti({
+          particleCount: 80,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 },
+        });
+
+        confetti({
+          particleCount: 80,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 },
+        });
+        setTimeout(() => {
+          navigate("/");
+        }, 2000);
+      }, 150);
+    }
+  }, [popupData]);
 
   /* ✅ Handle Guess Click */
   const handleMapClick = useCallback(
-  async (e) => {
-    if (!sessionId || !mapRef.current) return;
+    async (e) => {
+      if (!sessionId || !mapRef.current) return;
 
-    setGuessPosition(e.latlng);
+      setGuessPosition(e.latlng);
 
-    try {
-      const res = await api.post("/game/guess", {
-        sessionId,
-        guessedLat: e.latlng.lat,
-        guessedLng: e.latlng.lng,
-      });
+      try {
+        const res = await api.post("/game/guess", {
+          sessionId,
+          guessedLat: e.latlng.lat,
+          guessedLng: e.latlng.lng,
+        });
 
-      const { distance, isWinner } = res.data;
+        const { distance, isWinner } = res.data;
 
-      const map = mapRef.current;
-      const point = map.latLngToContainerPoint(e.latlng);
-      const size = map.getSize();
+        const map = mapRef.current;
+        const point = map.latLngToContainerPoint(e.latlng);
+        const size = map.getSize();
 
-      const popupWidth = 260;
-      const popupHeight = 160;
-      const padding = 12;
+        const popupWidth = 260;
+        const popupHeight = 160;
+        const padding = 12;
 
-      let left = point.x;
-      let top = point.y - popupHeight;
+        let left = point.x;
+        let top = point.y - popupHeight;
 
-      // RIGHT overflow
-      if (left + popupWidth + padding > size.x) {
-        left = size.x - popupWidth - padding;
+        // RIGHT overflow
+        if (left + popupWidth + padding > size.x) {
+          left = size.x - popupWidth - padding;
+        }
+
+        // LEFT overflow
+        if (left < padding) {
+          left = padding;
+        }
+
+        // TOP overflow
+        if (top < padding) {
+          top = point.y + padding;
+        }
+
+        // BOTTOM overflow
+        if (top + popupHeight + padding > size.y) {
+          top = size.y - popupHeight - padding;
+        }
+
+        // ✅ THIS WAS MISSING
+        setPopupData({
+          left,
+          top,
+          distance,
+          isWinner,
+        });
+      } catch (err) {
+        alert(err?.response?.data?.message ?? "Too many guesses!");
+        navigate("/");
       }
-
-      // LEFT overflow
-      if (left < padding) {
-        left = padding;
-      }
-
-      // TOP overflow
-      if (top < padding) {
-        top = point.y + padding;
-      }
-
-      // BOTTOM overflow
-      if (top + popupHeight + padding > size.y) {
-        top = size.y - popupHeight - padding;
-      }
-
-      // ✅ THIS WAS MISSING
-      setPopupData({
-        left,
-        top,
-        distance,
-        isWinner,
-      });
-
-    } catch (err) {
-      alert(err?.response?.data?.message ?? 'Too many guesses!')
-      navigate("/");
-    }
-  },
-  [sessionId]
-);
+    },
+    [sessionId],
+  );
 
   return (
     <div
@@ -270,65 +268,57 @@ export default function Game() {
           popupData?.isWinner ? "blur-[3px] brightness-75 scale-[0.99]" : ""
         }`}
       >
-      <MapContainer
-        center={[20, 0]}
-        zoom={3}
-        minZoom={2}
-        maxZoom={18}
-        maxBounds={[
-          [-90, -180],
-          [90, 180],
-        ]}
-        maxBoundsViscosity={1.0}
-        style={{ height: "100%", width: "100%" }}
-      >
-        {/* {guessPosition && (
+        <MapContainer
+          center={[20, 0]}
+          zoom={3}
+          minZoom={2}
+          maxZoom={18}
+          maxBounds={[
+            [-90, -180],
+            [90, 180],
+          ]}
+          maxBoundsViscosity={1.0}
+          style={{ height: "100%", width: "100%" }}
+        >
+          {/* {guessPosition && (
           <Marker position={guessPosition} />
         )} */}
-        {guessPosition && (
-          <Marker
-            position={guessPosition}
-            icon={myPulseIcon}
-          />
-        )}
-          
-        {Object.entries(playersGuesses).map(([id, player]) => {
-          if (!Object.keys(player).length) return null;
-          // skip current user's own marker
-          if (Number(id) === Number(userId)) return null;
+          {guessPosition && (
+            <Marker position={guessPosition} icon={myPulseIcon} />
+          )}
 
-          return (
-            <Marker
-              key={id}
-              position={[
-                player?.lat,
-                player?.lng
-              ]}
-              icon={otherPulseIcon}
-            >
-              <Tooltip
-                permanent
-                direction="top"
-                offset={[0, -10]}
-                opacity={1}
+          {Object.entries(playersGuesses).map(([id, player]) => {
+            if (!Object.keys(player).length) return null;
+            // skip current user's own marker
+            if (Number(id) === Number(userId)) return null;
+
+            return (
+              <Marker
+                key={id}
+                position={[player?.lat, player?.lng]}
+                icon={otherPulseIcon}
               >
-                <span className="font-semibold text-xs">
-                  {player?.name}
-                </span>
-              </Tooltip>
-            </Marker>
-          );
-        })}
-        <MapRefSetter mapRef={mapRef} />
+                <Tooltip
+                  permanent
+                  direction="top"
+                  offset={[0, -10]}
+                  opacity={1}
+                >
+                  <span className="font-semibold text-xs">{player?.name}</span>
+                </Tooltip>
+              </Marker>
+            );
+          })}
+          <MapRefSetter mapRef={mapRef} />
 
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          noWrap={true}
-          attribution="© OpenStreetMap"
-        />
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            noWrap={true}
+            attribution="© OpenStreetMap"
+          />
 
-        <ClickHandler onMapClick={handleMapClick} />
-      </MapContainer>
+          <ClickHandler onMapClick={handleMapClick} />
+        </MapContainer>
       </div>
 
       {/* ✅ Custom Popup */}
@@ -401,9 +391,7 @@ export default function Game() {
               )}
             </div>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400">
-              Calculating...
-            </p>
+            <p className="text-gray-500 dark:text-gray-400">Calculating...</p>
           )}
         </div>
       )}
