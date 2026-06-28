@@ -2,7 +2,7 @@ import pool from "../config/db.js";
 import { io } from "../server.js";
 import { calculateDistance } from "../utils/distance.js";
 
-const WIN_DISTANCE_KM = 1;
+const WIN_DISTANCE_KM = 3;
 
 export const startGame = async (req, res) => {
   try {
